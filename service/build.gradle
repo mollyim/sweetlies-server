@@ -1,0 +1,107 @@
+plugins {
+    id 'application'
+    id 'com.google.protobuf'
+}
+
+application {
+    getMainClass().set 'org.whispersystems.textsecuregcm.WhisperServerService'
+}
+
+sourceSets {
+    main {
+        java.srcDirs += "${buildDir}/generated/sources/java-templates/java/main"
+    }
+}
+
+compileJava {
+    doFirst {
+        copy {
+            from 'src/main/java-templates'
+            into "${buildDir}/generated/sources/java-templates/java/main"
+            expand([
+                    'project': ['version': version]
+            ])
+        }
+    }
+}
+
+test {
+    doFirst {
+        copy {
+            from configurations.testRuntimeNativeLib {
+                include '*.so'
+            }
+            into "${buildDir}/test-native-libs"
+        }
+    }
+    systemProperty 'java.library.path', "${buildDir}/test-native-libs"
+}
+
+configurations {
+    testRuntimeNativeLib
+}
+
+test {
+    useJUnitPlatform()
+}
+
+dependencies {
+    implementation project(":redis-dispatch")
+    implementation project(":websocket-resources")
+    implementation project(":gcm-sender-async")
+    implementation "org.signal:zkgroup-java:${zkgroupVersion}"
+    implementation "org.whispersystems:curve25519-java:${curve25519Vesrion}"
+    implementation "io.dropwizard:dropwizard-core:${dropwizardVersion}"
+    implementation "io.dropwizard:dropwizard-jdbi3:${dropwizardVersion}"
+    implementation "io.dropwizard:dropwizard-auth:${dropwizardVersion}"
+    implementation "io.dropwizard:dropwizard-client:${dropwizardVersion}"
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    implementation "net.logstash.logback:logstash-logback-encoder:${logstashLogbackVersion}"
+    implementation "org.liquibase:liquibase-core:${liquibaseVersion}"
+    implementation "org.eclipse.jetty.websocket:websocket-servlet:${jettyWebsocketVersion}"
+    implementation "commons-codec:commons-codec:${commonsCodecVersion}"
+    implementation "org.apache.commons:commons-csv:${commonsCsvVersion}"
+    implementation "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
+    implementation "io.github.resilience4j:resilience4j-retry:${resilience4jVersion}"
+    implementation "io.micrometer:micrometer-core:${micrometerVersion}"
+    implementation "io.micrometer:micrometer-registry-datadog:${micrometerVersion}"
+    implementation "org.coursera:dropwizard-metrics-datadog:${dropwizardMetricsDatadogVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    implementation "software.amazon.awssdk:sts:${awsSdk2version}"
+    implementation "software.amazon.awssdk:s3:${awsSdk2version}"
+    implementation "software.amazon.awssdk:sqs:${awsSdk2version}"
+    implementation "software.amazon.awssdk:dynamodb:${awsSdk2version}"
+    implementation "software.amazon.awssdk:appconfig:${awsSdk2version}"
+    implementation "com.amazonaws:aws-java-sdk-core:${awsSdkVersion}"
+    implementation "com.amazonaws:aws-java-sdk-s3:${awsSdkVersion}"
+    implementation "com.amazonaws:dynamodb-lock-client:${dynamoDbLockClient}"
+    implementation "redis.clients:jedis:${jedisVersion}"
+    implementation "io.lettuce:lettuce-core:${lettuceVersion}"
+    implementation "com.eatthepath:pushy:${pushyVersion}"
+    implementation "com.eatthepath:pushy-dropwizard-metrics-listener:${pushyVersion}"
+    implementation "com.vdurmont:semver4j:${semver4jVersion}"
+    implementation "com.google.guava:guava:${guavaVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+    implementation "com.googlecode.libphonenumber:libphonenumber:${libphonenumberVersion}"
+    implementation "com.google.cloud:google-cloud-recaptchaenterprise:${recaptchaVersion}"
+    implementation "com.stripe:stripe-java:${stripeVersion}"
+    runtimeOnly "io.dropwizard:dropwizard-migrations:${dropwizardVersion}"
+    runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${jaxbVersion}"
+    runtimeOnly "org.postgresql:postgresql:${postgresqlVersion}"
+    runtimeOnly "io.netty:netty-tcnative-boringssl-static:${boringSslVersion}:linux-x86_64"
+    testImplementation "io.dropwizard:dropwizard-testing:${dropwizardVersion}"
+    testImplementation "org.glassfish.jersey.test-framework:jersey-test-framework-core:${jerseyVersion}"
+    testImplementation "org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2:${jerseyVersion}"
+    testImplementation "com.opentable.components:otj-pg-embedded:${pgEmbeddedVersion}"
+    testImplementation "com.almworks.sqlite4java:sqlite4java:${sqliteVersion}"
+    testRuntimeNativeLib "com.almworks.sqlite4java:libsqlite4java-linux-amd64:${sqliteVersion}"
+    testImplementation platform("org.junit:junit-bom:${junitJupiterVersion}")
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitJupiterVersion}"
+    testImplementation "org.signal:embedded-redis:${embeddedRedis}"
+    testImplementation "com.fasterxml.uuid:java-uuid-generator:${uuidGenerator}"
+    testImplementation "com.amazonaws:DynamoDBLocal:${dynamoDbLocalVersion}"
+    testImplementation "pl.pragmatists:JUnitParams:${junitParamsVersion}"
+    testImplementation "com.github.tomakehurst:wiremock-jre8:${wiremockVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+}

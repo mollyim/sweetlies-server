@@ -5,7 +5,6 @@
 
 package org.whispersystems.textsecuregcm.tests.util;
 
-import com.almworks.sqlite4java.SQLite;
 import com.amazonaws.services.dynamodbv2.local.main.ServerRunner;
 import com.amazonaws.services.dynamodbv2.local.server.DynamoDBProxyServer;
 import org.junit.rules.ExternalResource;
@@ -24,7 +23,6 @@ public class LocalDynamoDbRule extends ExternalResource {
   @Override
   protected void before() throws Throwable {
     super.before();
-    SQLite.setLibraryPath("target/lib");  // if you see a library failed to load error, you need to run mvn test-compile at least once first
     ServerSocket serverSocket = new ServerSocket(0);
     serverSocket.setReuseAddress(false);
     port = serverSocket.getLocalPort();

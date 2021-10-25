@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+    id 'com.google.protobuf'
+}
+
+dependencies {
+    implementation "org.eclipse.jetty.websocket:websocket-api:${jettyWebsocketVersion}"
+    implementation "org.eclipse.jetty.websocket:websocket-servlet:${jettyWebsocketVersion}"
+    implementation "io.dropwizard:dropwizard-core:${dropwizardVersion}"
+    implementation "io.dropwizard:dropwizard-auth:${dropwizardVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
+    implementation "com.google.guava:guava:${guavaVersion}"
+    runtimeOnly "org.eclipse.jetty.websocket:websocket-server:${jettyWebsocketVersion}"
+    testImplementation "junit:junit:${junitVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitJupiterVersion}"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+}

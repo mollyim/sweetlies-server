@@ -1,6 +1,5 @@
 package org.whispersystems.textsecuregcm.storage;
 
-import com.almworks.sqlite4java.SQLite;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
@@ -125,10 +124,6 @@ public class DynamoDbExtension implements BeforeEachCallback, AfterEachCallback 
   }
 
   private void startServer() throws Exception {
-    // Even though we're using AWS SDK v2, Dynamo's local implementation's canonical location
-    // is within v1 (https://github.com/aws/aws-sdk-java-v2/issues/982).  This does support
-    // v2 clients, though.
-    SQLite.setLibraryPath("target/lib");  // if you see a library failed to load error, you need to run mvn test-compile at least once first
     ServerSocket serverSocket = new ServerSocket(0);
     serverSocket.setReuseAddress(false);
     port = serverSocket.getLocalPort();

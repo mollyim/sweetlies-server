@@ -1,0 +1,8 @@
+rootProject.name = 'sweetlies-server'
+
+include(':websocket-resources')
+include(':redis-dispatch')
+include(':service')
+include(':gcm-sender-async')
+
+project(':service').name = 'whisper-service'

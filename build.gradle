@@ -1,0 +1,80 @@
+plugins {
+    id 'com.google.protobuf' version '0.8.17' apply false
+}
+
+allprojects {
+    group = 'org.sweetlies'
+    version = gitVersion()
+}
+
+subprojects {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://s3-us-west-2.amazonaws.com/dynamodb-local/release'
+            content {
+                includeModule 'com.amazonaws', 'DynamoDBLocal'
+            }
+        }
+    }
+
+    ext {
+        awsSdkVersion = '1.11.939'
+        awsSdk2version = '2.16.66'
+        dynamoDbLocalVersion = '1.16.0'
+        commonsCodecVersion = '1.15'
+        commonsCsvVersion = '1.8'
+        dropwizardVersion = '2.0.22'
+        dropwizardMetricsDatadogVersion = '1.1.13'
+        dynamoDbLockClient = '1.1.0'
+        guavaVersion = '30.1.1-jre'
+        jaxbVersion = '2.3.1'
+        jedisVersion = '2.9.0'
+        lettuceVersion = '6.0.4.RELEASE'
+        libphonenumberVersion = '8.12.33'
+        logstashLogbackVersion = '6.6'
+        micrometerVersion = '1.5.3'
+        mockitoVersion = '3.11.1'
+        assertjVersion = '3.21.0'
+        boringSslVersion = '2.0.41.Final'
+        opentest4jVersion = '1.2.0'
+        postgresqlVersion = '42.2.24'
+        protobufVersion = '3.17.1'
+        pushyVersion = '0.15.0'
+        resilience4jVersion = '1.5.0'
+        slf4jVersion = '1.7.30'
+        stripeVersion = '20.79.0'
+        junitVersion = '4.13.2'
+        junitJupiterVersion = '5.8.1'
+        jacksonVersion = '2.12.5'
+        wiremockVersion = '2.31.0'
+        jettyWebsocketVersion = '9.4.41.v20210516'
+        junitParamsVersion = '1.1.1'
+        uuidGenerator = '3.2.0'
+        embeddedRedis = '0.8.1'
+        sqliteVersion = '1.0.392'
+        pgEmbeddedVersion = '0.13.3'
+        jerseyVersion = '2.33'
+        recaptchaVersion = '1.2.2'
+        semver4jVersion = '3.1.0'
+        liquibaseVersion = '3.10.3'
+        curve25519Vesrion = '0.5.0'
+        zkgroupVersion = '0.8.2'
+    }
+
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = '11'
+        targetCompatibility = '11'
+    }
+
+    // No need to scan dependencies for proto files
+    tasks.whenTaskAdded { task ->
+        if (task.name ==~ /extractInclude\w*Proto/) {
+            task.enabled = false
+        }
+    }
+}
+
+static def gitVersion() {
+    return 'git describe --tags --always --first-parent'.execute().text.trim()
+}
