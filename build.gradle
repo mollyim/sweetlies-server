@@ -73,6 +73,11 @@ subprojects {
             task.enabled = false
         }
     }
+
+    tasks.withType(AbstractArchiveTask) {
+        preserveFileTimestamps = false
+        reproducibleFileOrder = true
+    }
 }
 
 static def gitVersion() {
