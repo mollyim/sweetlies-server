@@ -1,20 +1,5 @@
-stripe:
-  apiKey:
-  idempotencyKeyGenerator:
-
 dynamoDbClientConfiguration:
   region: # AWS Region
-
-dynamoDbTables:
-  issuedReceipts:
-    tableName: # DDB Table Name
-    expiration: # Duration of time until rows expire
-    generator: # random binary sequence
-  redeemedReceipts:
-    tableName: # DDB Table Name
-    expiration: # Duration of time until rows expire
-  subscriptions:
-    tableName: # DDB Table Name
 
 twilio: # Twilio gateway configuration
   accountId: 
@@ -115,11 +100,6 @@ deletedAccountsDynamoDb: # DynamoDb table configuration
 deletedAccountsLockDynamoDb: # DynamoDb table configuration
   region:
   tableName:
-
-redeemedReceiptsDynamoDb: # DynamoDB table configuration
-  region:
-  tableName:
-  expirationTime: # ISO8601 Duration
 
 migrationDeletedAccountsDynamoDb: # DynamoDB table configuration
   region:
@@ -248,7 +228,6 @@ remoteConfig:
 
 
 paymentsService:
-  userAuthenticationTokenSharedSecret: # hex-encoded 32-byte secret shared with MobileCoin services used to generate auth tokens for Signal users
   fixerApiKey:
   paymentCurrencies:
     -
@@ -264,29 +243,3 @@ asnTable:
   s3Bucket:
   objectKey:
   maxSize:
-
-donation:
-  uri: # value
-  supportedCurrencies:
-    - # 1st supported currency
-    - # 2nd supported currency
-    - # ...
-    - # Nth supported currency
-  circuitBreaker:
-    failureRateThreshold: # value
-    ringBufferSizeInHalfOpenState: # value
-    ringBufferSizeInClosedState: # value
-    waitDurationInOpenStateInSeconds: # value
-  retry:
-    maxAttempts: # value
-    waitDuration: # value
-
-badges:
-  badges:
-    - id: TEST
-      imageUrl: https://example.com/test-badge
-      category: other
-  badgeIdsEnabledForAll:
-    - TEST
-  receiptLevels:
-    '1': TEST

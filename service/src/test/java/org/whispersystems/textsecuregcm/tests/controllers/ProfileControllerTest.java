@@ -6,7 +6,6 @@
 package org.whispersystems.textsecuregcm.tests.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.eq;
@@ -25,8 +24,6 @@ import io.dropwizard.testing.junit5.ResourceExtension;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.ws.rs.client.Entity;
@@ -46,14 +43,10 @@ import org.signal.zkgroup.profiles.ProfileKeyCommitment;
 import org.signal.zkgroup.profiles.ServerZkProfileOperations;
 import org.whispersystems.textsecuregcm.auth.AuthenticatedAccount;
 import org.whispersystems.textsecuregcm.auth.DisabledPermittedAuthenticatedAccount;
-import org.whispersystems.textsecuregcm.configuration.BadgeConfiguration;
-import org.whispersystems.textsecuregcm.configuration.BadgesConfiguration;
 import org.whispersystems.textsecuregcm.configuration.dynamic.DynamicConfiguration;
 import org.whispersystems.textsecuregcm.configuration.dynamic.DynamicPaymentsConfiguration;
 import org.whispersystems.textsecuregcm.controllers.ProfileController;
 import org.whispersystems.textsecuregcm.controllers.RateLimitExceededException;
-import org.whispersystems.textsecuregcm.entities.Badge;
-import org.whispersystems.textsecuregcm.entities.BadgeSvg;
 import org.whispersystems.textsecuregcm.entities.CreateProfileRequest;
 import org.whispersystems.textsecuregcm.entities.Profile;
 import org.whispersystems.textsecuregcm.entities.ProfileAvatarUploadAttributes;
@@ -62,7 +55,6 @@ import org.whispersystems.textsecuregcm.limits.RateLimiters;
 import org.whispersystems.textsecuregcm.s3.PolicySigner;
 import org.whispersystems.textsecuregcm.s3.PostPolicyGenerator;
 import org.whispersystems.textsecuregcm.storage.Account;
-import org.whispersystems.textsecuregcm.storage.AccountBadge;
 import org.whispersystems.textsecuregcm.storage.AccountsManager;
 import org.whispersystems.textsecuregcm.storage.DynamicConfigurationManager;
 import org.whispersystems.textsecuregcm.storage.ProfilesManager;
@@ -109,15 +101,6 @@ class ProfileControllerTest {
           profilesManager,
           usernamesManager,
           dynamicConfigurationManager,
-          (acceptableLanguages, accountBadges, isSelf) -> List.of(new Badge("TEST", "other", "Test Badge",
-              "This badge is in unit tests.", List.of("l", "m", "h", "x", "xx", "xxx"), "SVG", List.of(new BadgeSvg("sl", "sd", "st"), new BadgeSvg("ml", "md", "mt"), new BadgeSvg("ll", "ld", "lt")))
-          ),
-          new BadgesConfiguration(List.of(
-              new BadgeConfiguration("TEST", "other", List.of("l", "m", "h", "x", "xx", "xxx"), "SVG", List.of(new BadgeSvg("sl", "sd", "st"), new BadgeSvg("ml", "md", "mt"), new BadgeSvg("ll", "ld", "lt"))),
-              new BadgeConfiguration("TEST1", "testing", List.of("l", "m", "h", "x", "xx", "xxx"), "SVG", List.of(new BadgeSvg("sl", "sd", "st"), new BadgeSvg("ml", "md", "mt"), new BadgeSvg("ll", "ld", "lt"))),
-              new BadgeConfiguration("TEST2", "testing", List.of("l", "m", "h", "x", "xx", "xxx"), "SVG", List.of(new BadgeSvg("sl", "sd", "st"), new BadgeSvg("ml", "md", "mt"), new BadgeSvg("ll", "ld", "lt"))),
-              new BadgeConfiguration("TEST3", "testing", List.of("l", "m", "h", "x", "xx", "xxx"), "SVG", List.of(new BadgeSvg("sl", "sd", "st"), new BadgeSvg("ml", "md", "mt"), new BadgeSvg("ll", "ld", "lt")))
-          ), List.of("TEST1"), Map.of(1L, "TEST1", 2L, "TEST2", 3L, "TEST3")),
           s3client,
           postPolicyGenerator,
           policySigner,
@@ -205,8 +188,6 @@ class ProfileControllerTest {
     assertThat(profile.getName()).isEqualTo("baz");
     assertThat(profile.getAvatar()).isEqualTo("profiles/bang");
     assertThat(profile.getUsername()).isEqualTo("n00bkiller");
-    assertThat(profile.getBadges()).hasSize(1).element(0).has(new Condition<>(
-        badge -> "Test Badge".equals(badge.getName()), "has badge with expected name"));
 
     verify(accountsManager).get(AuthHelper.VALID_UUID_TWO);
     verify(usernamesManager, times(1)).get(eq(AuthHelper.VALID_UUID_TWO));
@@ -226,8 +207,6 @@ class ProfileControllerTest {
     assertThat(profile.getAvatar()).isEqualTo("profiles/bang");
     assertThat(profile.getUsername()).isEqualTo("n00bkiller");
     assertThat(profile.getUuid()).isEqualTo(AuthHelper.VALID_UUID_TWO);
-    assertThat(profile.getBadges()).hasSize(1).element(0).has(new Condition<>(
-        badge -> "Test Badge".equals(badge.getName()), "has badge with expected name"));
 
     verify(accountsManager, times(1)).get(eq(AuthHelper.VALID_UUID_TWO));
     verify(usernamesManager, times(1)).get(eq("n00bkiller"));
@@ -356,7 +335,7 @@ class ProfileControllerTest {
                                                               .request()
                                                               .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID, AuthHelper.VALID_PASSWORD))
                                                               .put(Entity.entity(new CreateProfileRequest(commitment, "someversion", "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678", null, null,
-                                                                  null, true, List.of()), MediaType.APPLICATION_JSON_TYPE), ProfileAvatarUploadAttributes.class);
+                                                                  null, true), MediaType.APPLICATION_JSON_TYPE), ProfileAvatarUploadAttributes.class);
 
     ArgumentCaptor<VersionedProfile> profileArgumentCaptor = ArgumentCaptor.forClass(VersionedProfile.class);
 
@@ -381,7 +360,7 @@ class ProfileControllerTest {
                                  .request()
                                  .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID, AuthHelper.VALID_PASSWORD))
                                  .put(Entity.entity(new CreateProfileRequest(commitment, "someversion", "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", null, null,
-                                     null, true, List.of()), MediaType.APPLICATION_JSON_TYPE));
+                                     null, true), MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus()).isEqualTo(422);
   }
@@ -397,7 +376,7 @@ class ProfileControllerTest {
                                  .request()
                                  .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
                                  .put(Entity.entity(new CreateProfileRequest(commitment, "anotherversion", "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678", null, null,
-                                     null, false, List.of()), MediaType.APPLICATION_JSON_TYPE));
+                                     null, false), MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.hasEntity()).isFalse();
@@ -429,7 +408,7 @@ class ProfileControllerTest {
                                                              .request()
                                                              .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
                                                              .put(Entity.entity(new CreateProfileRequest(commitment, "validversion", "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678", null, null,
-                                                                 null, true, List.of()), MediaType.APPLICATION_JSON_TYPE), ProfileAvatarUploadAttributes.class);
+                                                                 null, true), MediaType.APPLICATION_JSON_TYPE), ProfileAvatarUploadAttributes.class);
 
     ArgumentCaptor<VersionedProfile> profileArgumentCaptor = ArgumentCaptor.forClass(VersionedProfile.class);
 
@@ -454,7 +433,7 @@ class ProfileControllerTest {
             .target("/v1/profile/")
             .request()
             .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-            .put(Entity.entity(new CreateProfileRequest(commitment, "validversion", name, null, null, null, true, List.of()), MediaType.APPLICATION_JSON_TYPE), ProfileAvatarUploadAttributes.class);
+            .put(Entity.entity(new CreateProfileRequest(commitment, "validversion", name, null, null, null, true), MediaType.APPLICATION_JSON_TYPE), ProfileAvatarUploadAttributes.class);
 
     ArgumentCaptor<VersionedProfile> profileArgumentCaptor = ArgumentCaptor.forClass(VersionedProfile.class);
 
@@ -484,7 +463,7 @@ class ProfileControllerTest {
             .target("/v1/profile/")
             .request()
             .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-            .put(Entity.entity(new CreateProfileRequest(commitment, "anotherversion", name, emoji, text, null, false, List.of()), MediaType.APPLICATION_JSON_TYPE));
+            .put(Entity.entity(new CreateProfileRequest(commitment, "anotherversion", name, emoji, text, null, false), MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.hasEntity()).isFalse();
@@ -525,7 +504,7 @@ class ProfileControllerTest {
         .target("/v1/profile")
         .request()
         .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-        .put(Entity.entity(new CreateProfileRequest(commitment, "yetanotherversion", name, null, null, paymentAddress, false, List.of()), MediaType.APPLICATION_JSON_TYPE));
+        .put(Entity.entity(new CreateProfileRequest(commitment, "yetanotherversion", name, null, null, paymentAddress, false), MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.hasEntity()).isFalse();
@@ -563,7 +542,7 @@ class ProfileControllerTest {
         .target("/v1/profile")
         .request()
         .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-        .put(Entity.entity(new CreateProfileRequest(commitment, "yetanotherversion", name, null, null, paymentAddress, false, List.of()), MediaType.APPLICATION_JSON_TYPE));
+        .put(Entity.entity(new CreateProfileRequest(commitment, "yetanotherversion", name, null, null, paymentAddress, false), MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus()).isEqualTo(403);
     assertThat(response.hasEntity()).isFalse();
@@ -588,8 +567,6 @@ class ProfileControllerTest {
     assertThat(profile.getCapabilities().isGv1Migration()).isFalse();
     assertThat(profile.getUsername()).isEqualTo("n00bkiller");
     assertThat(profile.getUuid()).isNull();
-    assertThat(profile.getBadges()).hasSize(1).element(0).has(new Condition<>(
-        badge -> "Test Badge".equals(badge.getName()), "has badge with expected name"));
 
     verify(accountsManager, times(1)).get(eq(AuthHelper.VALID_UUID_TWO));
     verify(usernamesManager, times(1)).get(eq(AuthHelper.VALID_UUID_TWO));
@@ -614,7 +591,7 @@ class ProfileControllerTest {
         .target("/v1/profile")
         .request()
         .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-        .put(Entity.entity(new CreateProfileRequest(commitment, "someversion", name, null, null, paymentAddress, false, List.of()), MediaType.APPLICATION_JSON_TYPE));
+        .put(Entity.entity(new CreateProfileRequest(commitment, "someversion", name, null, null, paymentAddress, false), MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.hasEntity()).isFalse();
@@ -648,100 +625,5 @@ class ProfileControllerTest {
         .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID, AuthHelper.VALID_PASSWORD))
         .get(Profile.class);
     assertThat(profile.getPaymentAddress()).isNull();
-  }
-
-  @Test
-  void testSetProfileBadges() throws InvalidInputException {
-    ProfileKeyCommitment commitment = new ProfileKey(new byte[32]).getCommitment(AuthHelper.VALID_UUID);
-
-    clearInvocations(AuthHelper.VALID_ACCOUNT_TWO);
-
-    final String name = RandomStringUtils.randomAlphabetic(380);
-    final String emoji = RandomStringUtils.randomAlphanumeric(80);
-    final String text = RandomStringUtils.randomAlphanumeric(720);
-
-    Response response = resources.getJerseyTest()
-        .target("/v1/profile/")
-        .request()
-        .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-        .put(Entity.entity(new CreateProfileRequest(commitment, "anotherversion", name, emoji, text, null, false, List.of("TEST2")), MediaType.APPLICATION_JSON_TYPE));
-    assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.hasEntity()).isFalse();
-
-    @SuppressWarnings("unchecked")
-    ArgumentCaptor<List<AccountBadge>> badgeCaptor = ArgumentCaptor.forClass(List.class);
-    verify(AuthHelper.VALID_ACCOUNT_TWO).setBadges(refEq(clock), badgeCaptor.capture());
-
-    List<AccountBadge> badges = badgeCaptor.getValue();
-    assertThat(badges).isNotNull().hasSize(1).containsOnly(new AccountBadge("TEST2", Instant.ofEpochSecond(42 + 86400), true));
-
-    clearInvocations(AuthHelper.VALID_ACCOUNT_TWO);
-    when(AuthHelper.VALID_ACCOUNT_TWO.getBadges()).thenReturn(List.of(
-        new AccountBadge("TEST2", Instant.ofEpochSecond(42 + 86400), true)
-    ));
-
-    response = resources.getJerseyTest()
-        .target("/v1/profile/")
-        .request()
-        .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-        .put(Entity.entity(new CreateProfileRequest(commitment, "anotherversion", name, emoji, text, null, false, List.of("TEST3", "TEST2")), MediaType.APPLICATION_JSON_TYPE));
-    assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.hasEntity()).isFalse();
-
-    //noinspection unchecked
-    badgeCaptor = ArgumentCaptor.forClass(List.class);
-    verify(AuthHelper.VALID_ACCOUNT_TWO).setBadges(refEq(clock), badgeCaptor.capture());
-
-    badges = badgeCaptor.getValue();
-    assertThat(badges).isNotNull().hasSize(2).containsOnly(
-        new AccountBadge("TEST3", Instant.ofEpochSecond(42 + 86400), true),
-        new AccountBadge("TEST2", Instant.ofEpochSecond(42 + 86400), true));
-
-    clearInvocations(AuthHelper.VALID_ACCOUNT_TWO);
-    when(AuthHelper.VALID_ACCOUNT_TWO.getBadges()).thenReturn(List.of(
-        new AccountBadge("TEST3", Instant.ofEpochSecond(42 + 86400), true),
-        new AccountBadge("TEST2", Instant.ofEpochSecond(42 + 86400), true)
-    ));
-
-    response = resources.getJerseyTest()
-        .target("/v1/profile/")
-        .request()
-        .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-        .put(Entity.entity(new CreateProfileRequest(commitment, "anotherversion", name, emoji, text, null, false, List.of("TEST2", "TEST3")), MediaType.APPLICATION_JSON_TYPE));
-    assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.hasEntity()).isFalse();
-
-    //noinspection unchecked
-    badgeCaptor = ArgumentCaptor.forClass(List.class);
-    verify(AuthHelper.VALID_ACCOUNT_TWO).setBadges(refEq(clock), badgeCaptor.capture());
-
-    badges = badgeCaptor.getValue();
-    assertThat(badges).isNotNull().hasSize(2).containsOnly(
-        new AccountBadge("TEST2", Instant.ofEpochSecond(42 + 86400), true),
-        new AccountBadge("TEST3", Instant.ofEpochSecond(42 + 86400), true));
-
-    clearInvocations(AuthHelper.VALID_ACCOUNT_TWO);
-    when(AuthHelper.VALID_ACCOUNT_TWO.getBadges()).thenReturn(List.of(
-        new AccountBadge("TEST2", Instant.ofEpochSecond(42 + 86400), true),
-        new AccountBadge("TEST3", Instant.ofEpochSecond(42 + 86400), true)
-    ));
-
-    response = resources.getJerseyTest()
-        .target("/v1/profile/")
-        .request()
-        .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-        .put(Entity.entity(new CreateProfileRequest(commitment, "anotherversion", name, emoji, text, null, false, List.of("TEST1")), MediaType.APPLICATION_JSON_TYPE));
-    assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.hasEntity()).isFalse();
-
-    //noinspection unchecked
-    badgeCaptor = ArgumentCaptor.forClass(List.class);
-    verify(AuthHelper.VALID_ACCOUNT_TWO).setBadges(refEq(clock), badgeCaptor.capture());
-
-    badges = badgeCaptor.getValue();
-    assertThat(badges).isNotNull().hasSize(3).containsOnly(
-        new AccountBadge("TEST1", Instant.ofEpochSecond(42 + 86400), true),
-        new AccountBadge("TEST2", Instant.ofEpochSecond(42 + 86400), false),
-        new AccountBadge("TEST3", Instant.ofEpochSecond(42 + 86400), false));
   }
 }

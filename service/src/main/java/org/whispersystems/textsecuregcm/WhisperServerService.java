@@ -62,8 +62,6 @@ import org.signal.i18n.HeaderControlledResourceBundleLookup;
 import org.signal.zkgroup.ServerSecretParams;
 import org.signal.zkgroup.auth.ServerZkAuthOperations;
 import org.signal.zkgroup.profiles.ServerZkProfileOperations;
-import org.signal.zkgroup.receipts.ReceiptCredentialPresentation;
-import org.signal.zkgroup.receipts.ServerZkReceiptOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.whispersystems.dispatch.DispatchManager;
@@ -75,8 +73,6 @@ import org.whispersystems.textsecuregcm.auth.DisabledPermittedAuthenticatedAccou
 import org.whispersystems.textsecuregcm.auth.ExternalServiceCredentialGenerator;
 import org.whispersystems.textsecuregcm.auth.TurnTokenGenerator;
 import org.whispersystems.textsecuregcm.auth.WebsocketRefreshApplicationEventListener;
-import org.whispersystems.textsecuregcm.badges.ConfiguredProfileBadgeConverter;
-import org.whispersystems.textsecuregcm.badges.ResourceBundleLevelTranslator;
 import org.whispersystems.textsecuregcm.configuration.DirectoryServerConfiguration;
 import org.whispersystems.textsecuregcm.configuration.dynamic.DynamicConfiguration;
 import org.whispersystems.textsecuregcm.controllers.AccountController;
@@ -87,7 +83,6 @@ import org.whispersystems.textsecuregcm.controllers.CertificateController;
 import org.whispersystems.textsecuregcm.controllers.ChallengeController;
 import org.whispersystems.textsecuregcm.controllers.DeviceController;
 import org.whispersystems.textsecuregcm.controllers.DirectoryController;
-import org.whispersystems.textsecuregcm.controllers.DonationController;
 import org.whispersystems.textsecuregcm.controllers.KeepAliveController;
 import org.whispersystems.textsecuregcm.controllers.KeysController;
 import org.whispersystems.textsecuregcm.controllers.MessageController;
@@ -98,7 +93,6 @@ import org.whispersystems.textsecuregcm.controllers.RemoteConfigController;
 import org.whispersystems.textsecuregcm.controllers.SecureBackupController;
 import org.whispersystems.textsecuregcm.controllers.SecureStorageController;
 import org.whispersystems.textsecuregcm.controllers.StickerController;
-import org.whispersystems.textsecuregcm.controllers.SubscriptionController;
 import org.whispersystems.textsecuregcm.controllers.VoiceVerificationController;
 import org.whispersystems.textsecuregcm.currency.CurrencyConversionManager;
 import org.whispersystems.textsecuregcm.currency.FixerClient;
@@ -177,7 +171,6 @@ import org.whispersystems.textsecuregcm.storage.DirectoryReconciler;
 import org.whispersystems.textsecuregcm.storage.DirectoryReconciliationClient;
 import org.whispersystems.textsecuregcm.storage.DynamicConfigurationManager;
 import org.whispersystems.textsecuregcm.storage.FaultTolerantDatabase;
-import org.whispersystems.textsecuregcm.storage.IssuedReceiptsManager;
 import org.whispersystems.textsecuregcm.storage.KeysDynamoDb;
 import org.whispersystems.textsecuregcm.storage.MessagePersister;
 import org.whispersystems.textsecuregcm.storage.MessagesCache;
@@ -189,18 +182,15 @@ import org.whispersystems.textsecuregcm.storage.ProfilesManager;
 import org.whispersystems.textsecuregcm.storage.PubSubManager;
 import org.whispersystems.textsecuregcm.storage.PushChallengeDynamoDb;
 import org.whispersystems.textsecuregcm.storage.PushFeedbackProcessor;
-import org.whispersystems.textsecuregcm.storage.RedeemedReceiptsManager;
 import org.whispersystems.textsecuregcm.storage.RemoteConfigs;
 import org.whispersystems.textsecuregcm.storage.RemoteConfigsManager;
 import org.whispersystems.textsecuregcm.storage.ReportMessageDynamoDb;
 import org.whispersystems.textsecuregcm.storage.ReportMessageManager;
 import org.whispersystems.textsecuregcm.storage.ReservedUsernames;
 import org.whispersystems.textsecuregcm.storage.StoredVerificationCodeManager;
-import org.whispersystems.textsecuregcm.storage.SubscriptionManager;
 import org.whispersystems.textsecuregcm.storage.Usernames;
 import org.whispersystems.textsecuregcm.storage.UsernamesManager;
 import org.whispersystems.textsecuregcm.storage.VerificationCodeStore;
-import org.whispersystems.textsecuregcm.stripe.StripeManager;
 import org.whispersystems.textsecuregcm.util.AsnManager;
 import org.whispersystems.textsecuregcm.util.Constants;
 import org.whispersystems.textsecuregcm.util.DynamoDbFromConfig;
@@ -309,13 +299,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     environment.getObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
     environment.getObjectMapper().setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
-    HeaderControlledResourceBundleLookup headerControlledResourceBundleLookup =
-        new HeaderControlledResourceBundleLookup();
-    ConfiguredProfileBadgeConverter profileBadgeConverter = new ConfiguredProfileBadgeConverter(
-        clock, config.getBadges(), headerControlledResourceBundleLookup);
-    ResourceBundleLevelTranslator resourceBundleLevelTranslator = new ResourceBundleLevelTranslator(
-        headerControlledResourceBundleLookup);
-
     JdbiFactory jdbiFactory = new JdbiFactory(DefaultNameStrategy.CHECK_EMPTY);
     Jdbi        accountJdbi = jdbiFactory.build(environment, config.getAccountsDatabaseConfiguration(), "accountdb");
     Jdbi        abuseJdbi   = jdbiFactory.build(environment, config.getAbuseDatabaseConfiguration(), "abusedb"  );
@@ -421,14 +404,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     ExecutorService          storageServiceExecutor               = environment.lifecycle().executorService(name(getClass(), "storageService-%d")).maxThreads(1).minThreads(1).build();
     ExecutorService multiRecipientMessageExecutor = environment.lifecycle()
         .executorService(name(getClass(), "multiRecipientMessage-%d")).minThreads(64).maxThreads(64).build();
-    ExecutorService stripeExecutor = environment.lifecycle().executorService(name(getClass(), "stripe-%d")).
-        maxThreads(availableProcessors).  // mostly this is IO bound so tying to number of processors is tenuous at best
-        minThreads(availableProcessors).  // mostly this is IO bound so tying to number of processors is tenuous at best
-        allowCoreThreadTimeOut(true).
-        build();
-
-    StripeManager stripeManager = new StripeManager(config.getStripe().getApiKey(), stripeExecutor,
-        config.getStripe().getIdempotencyKeyGenerator());
 
     ExternalServiceCredentialGenerator directoryCredentialsGenerator = new ExternalServiceCredentialGenerator(config.getDirectoryConfiguration().getDirectoryClientConfiguration().getUserAuthenticationTokenSharedSecret(),
             config.getDirectoryConfiguration().getDirectoryClientConfiguration().getUserAuthenticationTokenUserIdSecret(),
@@ -449,7 +424,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
 
     ExternalServiceCredentialGenerator storageCredentialsGenerator   = new ExternalServiceCredentialGenerator(config.getSecureStorageServiceConfiguration().getUserAuthenticationTokenSharedSecret(), new byte[0], false);
     ExternalServiceCredentialGenerator backupCredentialsGenerator    = new ExternalServiceCredentialGenerator(config.getSecureBackupServiceConfiguration().getUserAuthenticationTokenSharedSecret(), new byte[0], false);
-    ExternalServiceCredentialGenerator paymentsCredentialsGenerator  = new ExternalServiceCredentialGenerator(config.getPaymentsServiceConfiguration().getUserAuthenticationTokenSharedSecret(), new byte[0], false);
 
     SecureBackupClient         secureBackupClient         = new SecureBackupClient(backupCredentialsGenerator, backupServiceExecutor, config.getSecureBackupServiceConfiguration());
     SecureStorageClient        secureStorageClient        = new SecureStorageClient(storageCredentialsGenerator, storageServiceExecutor, config.getSecureStorageServiceConfiguration());
@@ -478,18 +452,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     ProvisioningManager        provisioningManager        = new ProvisioningManager(pubSubManager);
     TorExitNodeManager         torExitNodeManager         = new TorExitNodeManager(recurringJobExecutor, config.getTorExitNodeListConfiguration());
     AsnManager                 asnManager                 = new AsnManager(recurringJobExecutor, config.getAsnTableConfiguration());
-    IssuedReceiptsManager issuedReceiptsManager = new IssuedReceiptsManager(
-        config.getDynamoDbTables().getIssuedReceipts().getTableName(),
-        config.getDynamoDbTables().getIssuedReceipts().getExpiration(),
-        dynamoDbAsyncClient,
-        config.getDynamoDbTables().getIssuedReceipts().getGenerator());
-    RedeemedReceiptsManager redeemedReceiptsManager = new RedeemedReceiptsManager(
-        clock,
-        config.getDynamoDbTables().getRedeemedReceipts().getTableName(),
-        dynamoDbAsyncClient,
-        config.getDynamoDbTables().getRedeemedReceipts().getExpiration());
-    SubscriptionManager subscriptionManager = new SubscriptionManager(
-        config.getDynamoDbTables().getSubscriptions().getTableName(), dynamoDbAsyncClient);
 
     AccountAuthenticator                  accountAuthenticator                  = new AccountAuthenticator(accountsManager);
     DisabledPermittedAccountAuthenticator disabledPermittedAccountAuthenticator = new DisabledPermittedAccountAuthenticator(accountsManager);
@@ -590,7 +552,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     ServerSecretParams zkSecretParams = new ServerSecretParams(config.getZkConfig().getServerSecret());
     ServerZkProfileOperations zkProfileOperations = new ServerZkProfileOperations(zkSecretParams);
     ServerZkAuthOperations zkAuthOperations = new ServerZkAuthOperations(zkSecretParams);
-    ServerZkReceiptOperations zkReceiptOperations = new ServerZkReceiptOperations(zkSecretParams);
 
     AuthFilter<BasicCredentials, AuthenticatedAccount> accountAuthFilter = new BasicCredentialAuthFilter.Builder<AuthenticatedAccount>().setAuthenticator(
         accountAuthenticator).buildAuthFilter();
@@ -643,12 +604,10 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
         new ChallengeController(rateLimitChallengeManager),
         new DeviceController(pendingDevicesManager, accountsManager, messagesManager, keysDynamoDb, rateLimiters, config.getMaxDevices()),
         new DirectoryController(directoryCredentialsGenerator),
-        new DonationController(clock, zkReceiptOperations, redeemedReceiptsManager, accountsManager, config.getBadges(),
-            ReceiptCredentialPresentation::new, stripeExecutor, config.getDonationConfiguration(), config.getStripe()),
         new MessageController(rateLimiters, messageSender, receiptSender, accountsManager, messagesManager, unsealedSenderRateLimiter, apnFallbackManager,
             rateLimitChallengeManager, reportMessageManager, multiRecipientMessageExecutor),
-        new PaymentsController(currencyManager, paymentsCredentialsGenerator),
-        new ProfileController(clock, rateLimiters, accountsManager, profilesManager, usernamesManager, dynamicConfigurationManager, profileBadgeConverter, config.getBadges(), cdnS3Client, profileCdnPolicyGenerator, profileCdnPolicySigner, config.getCdnConfiguration().getBucket(), zkProfileOperations),
+        new PaymentsController(currencyManager),
+        new ProfileController(clock, rateLimiters, accountsManager, profilesManager, usernamesManager, dynamicConfigurationManager, cdnS3Client, profileCdnPolicyGenerator, profileCdnPolicySigner, config.getCdnConfiguration().getBucket(), zkProfileOperations),
         new ProvisioningController(rateLimiters, provisioningManager),
         new RemoteConfigController(remoteConfigsManager, config.getRemoteConfigConfiguration().getAuthorizedTokens(), config.getRemoteConfigConfiguration().getGlobalConfig()),
         new SecureBackupController(backupCredentialsGenerator),
@@ -657,11 +616,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
             config.getCdnConfiguration().getAccessSecret(), config.getCdnConfiguration().getRegion(),
             config.getCdnConfiguration().getBucket())
     );
-    if (config.getSubscription() != null && config.getBoost() != null) {
-      commonControllers.add(new SubscriptionController(clock, config.getSubscription(), config.getBoost(),
-          subscriptionManager, stripeManager, zkReceiptOperations, issuedReceiptsManager, profileBadgeConverter,
-          resourceBundleLevelTranslator));
-    }
 
     for (Object controller : commonControllers) {
       environment.jersey().register(controller);

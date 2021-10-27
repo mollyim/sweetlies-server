@@ -19,17 +19,13 @@ import org.whispersystems.textsecuregcm.configuration.AccountsDynamoDbConfigurat
 import org.whispersystems.textsecuregcm.configuration.ApnConfiguration;
 import org.whispersystems.textsecuregcm.configuration.AppConfigConfiguration;
 import org.whispersystems.textsecuregcm.configuration.AwsAttachmentsConfiguration;
-import org.whispersystems.textsecuregcm.configuration.BadgesConfiguration;
-import org.whispersystems.textsecuregcm.configuration.BoostConfiguration;
 import org.whispersystems.textsecuregcm.configuration.CdnConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DatabaseConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DatadogConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DeletedAccountsDynamoDbConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DirectoryConfiguration;
-import org.whispersystems.textsecuregcm.configuration.DonationConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DynamoDbClientConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DynamoDbConfiguration;
-import org.whispersystems.textsecuregcm.configuration.DynamoDbTables;
 import org.whispersystems.textsecuregcm.configuration.GcmConfiguration;
 import org.whispersystems.textsecuregcm.configuration.GcpAttachmentsConfiguration;
 import org.whispersystems.textsecuregcm.configuration.MaxDeviceConfiguration;
@@ -47,8 +43,6 @@ import org.whispersystems.textsecuregcm.configuration.RemoteConfigConfiguration;
 import org.whispersystems.textsecuregcm.configuration.ReportMessageConfiguration;
 import org.whispersystems.textsecuregcm.configuration.SecureBackupServiceConfiguration;
 import org.whispersystems.textsecuregcm.configuration.SecureStorageServiceConfiguration;
-import org.whispersystems.textsecuregcm.configuration.StripeConfiguration;
-import org.whispersystems.textsecuregcm.configuration.SubscriptionConfiguration;
 import org.whispersystems.textsecuregcm.configuration.TestDeviceConfiguration;
 import org.whispersystems.textsecuregcm.configuration.TurnConfiguration;
 import org.whispersystems.textsecuregcm.configuration.TwilioConfiguration;
@@ -63,17 +57,7 @@ public class WhisperServerConfiguration extends Configuration {
   @NotNull
   @Valid
   @JsonProperty
-  private StripeConfiguration stripe;
-
-  @NotNull
-  @Valid
-  @JsonProperty
   private DynamoDbClientConfiguration dynamoDbClientConfiguration;
-
-  @NotNull
-  @Valid
-  @JsonProperty
-  private DynamoDbTables dynamoDbTables;
 
   @NotNull
   @Valid
@@ -308,40 +292,12 @@ public class WhisperServerConfiguration extends Configuration {
   @Valid
   @NotNull
   @JsonProperty
-  private DonationConfiguration donation;
-
-  @Valid
-  @NotNull
-  @JsonProperty
-  private BadgesConfiguration badges;
-
-  @Valid
-  @JsonProperty
-  @NotNull
-  private SubscriptionConfiguration subscription;
-
-  @Valid
-  @JsonProperty
-  @NotNull
-  private BoostConfiguration boost;
-
-  @Valid
-  @NotNull
-  @JsonProperty
   private ReportMessageConfiguration reportMessage = new ReportMessageConfiguration();
 
   private Map<String, String> transparentDataIndex = new HashMap<>();
 
-  public StripeConfiguration getStripe() {
-    return stripe;
-  }
-
   public DynamoDbClientConfiguration getDynamoDbClientConfiguration() {
     return dynamoDbClientConfiguration;
-  }
-
-  public DynamoDbTables getDynamoDbTables() {
-    return dynamoDbTables;
   }
 
   public RecaptchaConfiguration getRecaptchaConfiguration() {
@@ -544,22 +500,6 @@ public class WhisperServerConfiguration extends Configuration {
 
   public MonitoredS3ObjectConfiguration getAsnTableConfiguration() {
     return asnTable;
-  }
-
-  public DonationConfiguration getDonationConfiguration() {
-    return donation;
-  }
-
-  public BadgesConfiguration getBadges() {
-    return badges;
-  }
-
-  public SubscriptionConfiguration getSubscription() {
-    return subscription;
-  }
-
-  public BoostConfiguration getBoost() {
-    return boost;
   }
 
   public ReportMessageConfiguration getReportMessageConfiguration() {

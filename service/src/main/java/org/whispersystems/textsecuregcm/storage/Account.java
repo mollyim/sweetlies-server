@@ -8,12 +8,7 @@ package org.whispersystems.textsecuregcm.storage;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -49,9 +44,6 @@ public class Account {
 
   @JsonProperty
   private String avatar;
-
-  @JsonProperty
-  private List<AccountBadge> badges = new ArrayList<>();
 
   @JsonProperty
   private String registrationLock;
@@ -313,80 +305,6 @@ public class Account {
     requireNotStale();
 
     this.avatar = avatar;
-  }
-
-  public List<AccountBadge> getBadges() {
-    requireNotStale();
-
-    return badges;
-  }
-
-  public void setBadges(Clock clock, List<AccountBadge> badges) {
-    requireNotStale();
-
-    this.badges = badges;
-
-    purgeStaleBadges(clock);
-  }
-
-  public void addBadge(Clock clock, AccountBadge badge) {
-    requireNotStale();
-
-    boolean added = false;
-    for (int i = 0; i < badges.size(); i++) {
-      AccountBadge badgeInList = badges.get(i);
-      if (Objects.equals(badgeInList.getId(), badge.getId())) {
-        if (added) {
-          badges.remove(i);
-          i--;
-        } else {
-          badges.set(i, badgeInList.mergeWith(badge));
-          added = true;
-        }
-      }
-    }
-
-    if (!added) {
-      badges.add(badge);
-    }
-
-    purgeStaleBadges(clock);
-  }
-
-  public void makeBadgePrimaryIfExists(Clock clock, String badgeId) {
-    requireNotStale();
-
-    // early exit if it's already the first item in the list
-    if (!badges.isEmpty() && Objects.equals(badges.get(0).getId(), badgeId)) {
-      purgeStaleBadges(clock);
-      return;
-    }
-
-    int indexOfBadge = -1;
-    for (int i = 1; i < badges.size(); i++) {
-      if (Objects.equals(badgeId, badges.get(i).getId())) {
-        indexOfBadge = i;
-        break;
-      }
-    }
-
-    if (indexOfBadge != -1) {
-      badges.add(0, badges.remove(indexOfBadge));
-    }
-
-    purgeStaleBadges(clock);
-  }
-
-  public void removeBadge(Clock clock, String id) {
-    requireNotStale();
-
-    badges.removeIf(accountBadge -> Objects.equals(accountBadge.getId(), id));
-    purgeStaleBadges(clock);
-  }
-
-  private void purgeStaleBadges(Clock clock) {
-    final Instant now = clock.instant();
-    badges.removeIf(accountBadge -> now.isAfter(accountBadge.getExpiration()));
   }
 
   public void setRegistrationLockFromAttributes(final AccountAttributes attributes) {
