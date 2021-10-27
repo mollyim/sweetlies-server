@@ -1,6 +1,7 @@
 plugins {
     id 'application'
     id 'com.google.protobuf'
+    id 'com.google.cloud.tools.jib'
 }
 
 application {
@@ -104,4 +105,13 @@ dependencies {
     testImplementation "com.github.tomakehurst:wiremock-jre8:${wiremockVersion}"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
+}
+
+jib {
+    from {
+        image = 'eclipse-temurin:11-jre@sha256:fec2ed05a90d99ad0c8af17438d0db38765a278e0190e8af82c7c7f7a5c84ce2'
+    }
+    to {
+        image = 'sweetlies-whisper-service:latest'
+    }
 }
