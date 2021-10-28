@@ -9,6 +9,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.dropwizard.lifecycle.Managed;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -22,6 +23,7 @@ import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvide
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -48,6 +50,17 @@ public class S3ObjectMonitor implements Managed {
 
   private static final Logger log = LoggerFactory.getLogger(S3ObjectMonitor.class);
 
+  private static S3Client createS3Client(final String s3Region) {
+    S3ClientBuilder builder = S3Client.builder()
+        .region(Region.of(s3Region))
+        .credentialsProvider(InstanceProfileCredentialsProvider.create());
+    final String endpoint = System.getenv("AWS_ENDPOINT_OVERRIDE");
+    if (endpoint != null && !endpoint.isEmpty()) {
+      builder.endpointOverride(URI.create(endpoint));
+    }
+    return builder.build();
+  }
+
   public S3ObjectMonitor(
       final String s3Region,
       final String s3Bucket,
@@ -57,10 +70,7 @@ public class S3ObjectMonitor implements Managed {
       final Duration refreshInterval,
       final Consumer<InputStream> changeListener) {
 
-    this(S3Client.builder()
-            .region(Region.of(s3Region))
-            .credentialsProvider(InstanceProfileCredentialsProvider.create())
-            .build(),
+    this(createS3Client(s3Region),
         s3Bucket,
         objectKey,
         maxObjectSize,

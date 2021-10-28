@@ -6,10 +6,8 @@ package org.whispersystems.textsecuregcm;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.jdbi3.strategies.DefaultNameStrategy;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -338,14 +336,9 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
         config.getPendingDevicesDynamoDbConfiguration(),
         software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider.create());
 
-    AmazonDynamoDB deletedAccountsLockDynamoDbClient = AmazonDynamoDBClientBuilder.standard()
-        .withRegion(config.getDeletedAccountsLockDynamoDbConfiguration().getRegion())
-        .withClientConfiguration(new ClientConfiguration().withClientExecutionTimeout(
-                ((int) config.getDeletedAccountsLockDynamoDbConfiguration().getClientExecutionTimeout().toMillis()))
-            .withRequestTimeout(
-                (int) config.getDeletedAccountsLockDynamoDbConfiguration().getClientRequestTimeout().toMillis()))
-        .withCredentials(InstanceProfileCredentialsProvider.getInstance())
-        .build();
+    AmazonDynamoDB deletedAccountsLockDynamoDbClient = DynamoDbFromConfig.legacyClient(
+        config.getDeletedAccountsLockDynamoDbConfiguration(),
+        InstanceProfileCredentialsProvider.getInstance());
 
     DeletedAccounts deletedAccounts = new DeletedAccounts(deletedAccountsDynamoDbClient,
         config.getDeletedAccountsDynamoDbConfiguration().getTableName(),
