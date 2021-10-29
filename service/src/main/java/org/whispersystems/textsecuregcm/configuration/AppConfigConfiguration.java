@@ -18,6 +18,10 @@ public class AppConfigConfiguration {
   @NotEmpty
   private String configuration;
 
+  @JsonProperty
+  @NotEmpty
+  private String region;
+
   public String getApplication() {
     return application;
   }
@@ -28,5 +32,9 @@ public class AppConfigConfiguration {
 
   public String getConfigurationName() {
     return configuration;
+  }
+
+  public String getRegion() {
+    return region;
   }
 }

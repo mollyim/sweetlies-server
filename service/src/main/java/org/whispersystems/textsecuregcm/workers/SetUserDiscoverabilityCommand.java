@@ -134,7 +134,7 @@ public class SetUserDiscoverabilityCommand extends EnvironmentCommand<WhisperSer
 
       DynamicConfigurationManager<DynamicConfiguration> dynamicConfigurationManager = new DynamicConfigurationManager<>(
           configuration.getAppConfig().getApplication(), configuration.getAppConfig().getEnvironment(),
-          configuration.getAppConfig().getConfigurationName(), DynamicConfiguration.class);
+          configuration.getAppConfig().getConfigurationName(), configuration.getAppConfig().getRegion(), DynamicConfiguration.class);
       dynamicConfigurationManager.start();
 
       DynamoDbClient pendingAccountsDynamoDbClient = DynamoDbFromConfig

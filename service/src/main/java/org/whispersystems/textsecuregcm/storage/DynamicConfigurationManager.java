@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.whispersystems.textsecuregcm.util.Util;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.appconfig.AppConfigClient;
 import software.amazon.awssdk.services.appconfig.model.GetConfigurationRequest;
 import software.amazon.awssdk.services.appconfig.model.GetConfigurationResponse;
@@ -48,9 +49,10 @@ public class DynamicConfigurationManager<T> {
 
   private static final Logger logger = LoggerFactory.getLogger(DynamicConfigurationManager.class);
 
-  public DynamicConfigurationManager(String application, String environment, String configurationName,
+  public DynamicConfigurationManager(String application, String environment, String configurationName, String region,
       Class<T> configurationClass) {
     this(AppConfigClient.builder()
+            .region(Region.of(region))
             .overrideConfiguration(ClientOverrideConfiguration.builder()
                 .apiCallTimeout(Duration.ofMillis(10000))
                 .apiCallAttemptTimeout(Duration.ofMillis(10000)).build())

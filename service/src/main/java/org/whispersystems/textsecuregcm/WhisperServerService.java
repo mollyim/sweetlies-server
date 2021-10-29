@@ -406,6 +406,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
         new DynamicConfigurationManager<>(config.getAppConfig().getApplication(),
             config.getAppConfig().getEnvironment(),
             config.getAppConfig().getConfigurationName(),
+            config.getAppConfig().getRegion(),
             DynamicConfiguration.class);
 
     dynamicConfigurationManager.start();
