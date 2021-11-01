@@ -132,10 +132,16 @@ public class SetUserDiscoverabilityCommand extends EnvironmentCommand<WhisperSer
           configuration.getSecureStorageServiceConfiguration().getUserAuthenticationTokenSharedSecret(), new byte[0],
           false);
 
-      DynamicConfigurationManager<DynamicConfiguration> dynamicConfigurationManager = new DynamicConfigurationManager<>(
-          configuration.getAppConfig().getApplication(), configuration.getAppConfig().getEnvironment(),
-          configuration.getAppConfig().getConfigurationName(), configuration.getAppConfig().getRegion(), DynamicConfiguration.class);
-      dynamicConfigurationManager.start();
+      DynamicConfigurationManager<DynamicConfiguration> dynamicConfigurationManager;
+      if (configuration.getAppConfig().getEnabled()) {
+        dynamicConfigurationManager = new DynamicConfigurationManager<>(
+            configuration.getAppConfig().getApplication(), configuration.getAppConfig().getEnvironment(),
+            configuration.getAppConfig().getConfigurationName(), configuration.getAppConfig().getRegion(),
+            DynamicConfiguration.class);
+        dynamicConfigurationManager.start();
+      } else {
+        dynamicConfigurationManager = new DynamicConfigurationManager<>(new DynamicConfiguration());
+      }
 
       DynamoDbClient pendingAccountsDynamoDbClient = DynamoDbFromConfig
           .client(configuration.getPendingAccountsDynamoDbConfiguration(),

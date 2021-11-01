@@ -7,6 +7,9 @@ import javax.validation.constraints.NotEmpty;
 public class AppConfigConfiguration {
 
   @JsonProperty
+  private boolean enabled;
+
+  @JsonProperty
   @NotEmpty
   private String application;
 
@@ -21,6 +24,10 @@ public class AppConfigConfiguration {
   @JsonProperty
   @NotEmpty
   private String region;
+
+  public boolean getEnabled() {
+    return enabled;
+  }
 
   public String getApplication() {
     return application;

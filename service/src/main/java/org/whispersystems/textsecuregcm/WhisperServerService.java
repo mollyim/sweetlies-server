@@ -402,14 +402,18 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
             config.getDirectoryConfiguration().getDirectoryClientConfiguration().getUserAuthenticationTokenUserIdSecret(),
             true);
 
-    DynamicConfigurationManager<DynamicConfiguration> dynamicConfigurationManager =
-        new DynamicConfigurationManager<>(config.getAppConfig().getApplication(),
-            config.getAppConfig().getEnvironment(),
-            config.getAppConfig().getConfigurationName(),
-            config.getAppConfig().getRegion(),
-            DynamicConfiguration.class);
-
-    dynamicConfigurationManager.start();
+    DynamicConfigurationManager<DynamicConfiguration> dynamicConfigurationManager;
+    if (config.getAppConfig().getEnabled()) {
+      dynamicConfigurationManager =
+          new DynamicConfigurationManager<>(config.getAppConfig().getApplication(),
+              config.getAppConfig().getEnvironment(),
+              config.getAppConfig().getConfigurationName(),
+              config.getAppConfig().getRegion(),
+              DynamicConfiguration.class);
+      dynamicConfigurationManager.start();
+    } else {
+      dynamicConfigurationManager = new DynamicConfigurationManager<>(new DynamicConfiguration());
+    }
 
     ExperimentEnrollmentManager experimentEnrollmentManager = new ExperimentEnrollmentManager(dynamicConfigurationManager);
 

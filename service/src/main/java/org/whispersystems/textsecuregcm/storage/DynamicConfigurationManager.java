@@ -71,6 +71,17 @@ public class DynamicConfigurationManager<T> {
     this.configurationClass = configurationClass;
   }
 
+  public DynamicConfigurationManager(T dynamicConfigOverride) {
+    this.appConfigClient = null;
+    this.application = null;
+    this.environment = null;
+    this.configurationName = null;
+    this.clientId = null;
+    this.configurationClass = null;
+    this.configuration.set(dynamicConfigOverride);
+    this.initialized = true;
+  }
+
   public T getConfiguration() {
     synchronized (this) {
       while (!initialized) {
