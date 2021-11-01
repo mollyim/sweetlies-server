@@ -71,7 +71,6 @@ import org.whispersystems.textsecuregcm.auth.DisabledPermittedAuthenticatedAccou
 import org.whispersystems.textsecuregcm.auth.ExternalServiceCredentialGenerator;
 import org.whispersystems.textsecuregcm.auth.TurnTokenGenerator;
 import org.whispersystems.textsecuregcm.auth.WebsocketRefreshApplicationEventListener;
-import org.whispersystems.textsecuregcm.configuration.DirectoryServerConfiguration;
 import org.whispersystems.textsecuregcm.configuration.dynamic.DynamicConfiguration;
 import org.whispersystems.textsecuregcm.controllers.AccountController;
 import org.whispersystems.textsecuregcm.controllers.AttachmentControllerV1;
@@ -80,7 +79,6 @@ import org.whispersystems.textsecuregcm.controllers.AttachmentControllerV3;
 import org.whispersystems.textsecuregcm.controllers.CertificateController;
 import org.whispersystems.textsecuregcm.controllers.ChallengeController;
 import org.whispersystems.textsecuregcm.controllers.DeviceController;
-import org.whispersystems.textsecuregcm.controllers.DirectoryController;
 import org.whispersystems.textsecuregcm.controllers.KeepAliveController;
 import org.whispersystems.textsecuregcm.controllers.KeysController;
 import org.whispersystems.textsecuregcm.controllers.MessageController;
@@ -152,7 +150,6 @@ import org.whispersystems.textsecuregcm.securestorage.SecureStorageClient;
 import org.whispersystems.textsecuregcm.sms.SmsSender;
 import org.whispersystems.textsecuregcm.sms.TwilioSmsSender;
 import org.whispersystems.textsecuregcm.sms.TwilioVerifyExperimentEnrollmentManager;
-import org.whispersystems.textsecuregcm.sqs.DirectoryQueue;
 import org.whispersystems.textsecuregcm.storage.AbusiveHostRules;
 import org.whispersystems.textsecuregcm.storage.AccountCleaner;
 import org.whispersystems.textsecuregcm.storage.AccountDatabaseCrawler;
@@ -160,13 +157,8 @@ import org.whispersystems.textsecuregcm.storage.AccountDatabaseCrawlerCache;
 import org.whispersystems.textsecuregcm.storage.AccountDatabaseCrawlerListener;
 import org.whispersystems.textsecuregcm.storage.Accounts;
 import org.whispersystems.textsecuregcm.storage.AccountsManager;
-import org.whispersystems.textsecuregcm.storage.ContactDiscoveryWriter;
 import org.whispersystems.textsecuregcm.storage.DeletedAccounts;
-import org.whispersystems.textsecuregcm.storage.DeletedAccountsDirectoryReconciler;
 import org.whispersystems.textsecuregcm.storage.DeletedAccountsManager;
-import org.whispersystems.textsecuregcm.storage.DeletedAccountsTableCrawler;
-import org.whispersystems.textsecuregcm.storage.DirectoryReconciler;
-import org.whispersystems.textsecuregcm.storage.DirectoryReconciliationClient;
 import org.whispersystems.textsecuregcm.storage.DynamicConfigurationManager;
 import org.whispersystems.textsecuregcm.storage.FaultTolerantDatabase;
 import org.whispersystems.textsecuregcm.storage.KeysDynamoDb;
@@ -206,7 +198,6 @@ import org.whispersystems.textsecuregcm.workers.DeleteUserCommand;
 import org.whispersystems.textsecuregcm.workers.ServerVersionCommand;
 import org.whispersystems.textsecuregcm.workers.SetCrawlerAccelerationTask;
 import org.whispersystems.textsecuregcm.workers.SetRequestLoggingEnabledTask;
-import org.whispersystems.textsecuregcm.workers.SetUserDiscoverabilityCommand;
 import org.whispersystems.textsecuregcm.workers.ZkParamsCommand;
 import org.whispersystems.websocket.WebSocketResourceProviderFactory;
 import org.whispersystems.websocket.setup.WebSocketEnvironment;
@@ -234,7 +225,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     bootstrap.addCommand(new ZkParamsCommand());
     bootstrap.addCommand(new ServerVersionCommand());
     bootstrap.addCommand(new CheckDynamicConfigurationCommand());
-    bootstrap.addCommand(new SetUserDiscoverabilityCommand());
 
     bootstrap.addBundle(new NameableMigrationsBundle<WhisperServerConfiguration>("accountdb", "accountsdb.xml") {
       @Override
@@ -341,8 +331,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
         InstanceProfileCredentialsProvider.getInstance());
 
     DeletedAccounts deletedAccounts = new DeletedAccounts(deletedAccountsDynamoDbClient,
-        config.getDeletedAccountsDynamoDbConfiguration().getTableName(),
-        config.getDeletedAccountsDynamoDbConfiguration().getNeedsReconciliationIndexName());
+        config.getDeletedAccountsDynamoDbConfiguration().getTableName());
 
     Accounts accounts = new Accounts(accountsDynamoDbClient,
         config.getAccountsDynamoDbConfiguration().getTableName(),
@@ -398,10 +387,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     ExecutorService multiRecipientMessageExecutor = environment.lifecycle()
         .executorService(name(getClass(), "multiRecipientMessage-%d")).minThreads(64).maxThreads(64).build();
 
-    ExternalServiceCredentialGenerator directoryCredentialsGenerator = new ExternalServiceCredentialGenerator(config.getDirectoryConfiguration().getDirectoryClientConfiguration().getUserAuthenticationTokenSharedSecret(),
-            config.getDirectoryConfiguration().getDirectoryClientConfiguration().getUserAuthenticationTokenUserIdSecret(),
-            true);
-
     DynamicConfigurationManager<DynamicConfiguration> dynamicConfigurationManager;
     if (config.getAppConfig().getEnabled()) {
       dynamicConfigurationManager =
@@ -426,7 +411,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     SecureBackupClient         secureBackupClient         = new SecureBackupClient(backupCredentialsGenerator, backupServiceExecutor, config.getSecureBackupServiceConfiguration());
     SecureStorageClient        secureStorageClient        = new SecureStorageClient(storageCredentialsGenerator, storageServiceExecutor, config.getSecureStorageServiceConfiguration());
     ClientPresenceManager      clientPresenceManager      = new ClientPresenceManager(clientPresenceCluster, recurringJobExecutor, keyspaceNotificationDispatchExecutor);
-    DirectoryQueue             directoryQueue             = new DirectoryQueue(config.getDirectoryConfiguration().getSqsConfiguration());
     StoredVerificationCodeManager pendingAccountsManager  = new StoredVerificationCodeManager(pendingAccounts);
     StoredVerificationCodeManager pendingDevicesManager   = new StoredVerificationCodeManager(pendingDevices);
     UsernamesManager           usernamesManager           = new UsernamesManager(usernames, reservedUsernames, cacheCluster);
@@ -438,7 +422,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     DeletedAccountsManager deletedAccountsManager = new DeletedAccountsManager(deletedAccounts,
         deletedAccountsLockDynamoDbClient, config.getDeletedAccountsLockDynamoDbConfiguration().getTableName());
     AccountsManager accountsManager = new AccountsManager(accounts, cacheCluster,
-        deletedAccountsManager, directoryQueue, keysDynamoDb, messagesManager, usernamesManager, profilesManager,
+        deletedAccountsManager, keysDynamoDb, messagesManager, usernamesManager, profilesManager,
         pendingAccountsManager, secureStorageClient, secureBackupClient, clientPresenceManager);
     RemoteConfigsManager remoteConfigsManager = new RemoteConfigsManager(remoteConfigs);
     DeadLetterHandler          deadLetterHandler          = new DeadLetterHandler(accountsManager, messagesManager);
@@ -482,23 +466,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     // TODO listeners must be ordered so that ones that directly update accounts come last, so that read-only ones are not working with stale data
     final List<AccountDatabaseCrawlerListener> accountDatabaseCrawlerListeners = new ArrayList<>();
 
-    final List<DeletedAccountsDirectoryReconciler> deletedAccountsDirectoryReconcilers = new ArrayList<>();
-    for (DirectoryServerConfiguration directoryServerConfiguration : config.getDirectoryConfiguration()
-        .getDirectoryServerConfiguration()) {
-      final DirectoryReconciliationClient directoryReconciliationClient = new DirectoryReconciliationClient(
-          directoryServerConfiguration);
-      final DirectoryReconciler directoryReconciler = new DirectoryReconciler(
-          directoryServerConfiguration.getReplicationName(), directoryReconciliationClient,
-          dynamicConfigurationManager);
-      // reconcilers are read-only
-      accountDatabaseCrawlerListeners.add(directoryReconciler);
-
-      final DeletedAccountsDirectoryReconciler deletedAccountsDirectoryReconciler = new DeletedAccountsDirectoryReconciler(
-          directoryServerConfiguration.getReplicationName(), directoryReconciliationClient);
-      deletedAccountsDirectoryReconcilers.add(deletedAccountsDirectoryReconciler);
-    }
     accountDatabaseCrawlerListeners.add(new NonNormalizedAccountCrawlerListener(accountsManager, metricsCluster));
-    accountDatabaseCrawlerListeners.add(new ContactDiscoveryWriter(accountsManager));
     // PushFeedbackProcessor may update device properties
     accountDatabaseCrawlerListeners.add(new PushFeedbackProcessor(accountsManager));
     // delete accounts last
@@ -516,15 +484,12 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
         config.getAccountDatabaseCrawlerConfiguration().getChunkIntervalMs()
     );
 
-    DeletedAccountsTableCrawler deletedAccountsTableCrawler = new DeletedAccountsTableCrawler(deletedAccountsManager, deletedAccountsDirectoryReconcilers, cacheCluster, recurringJobExecutor);
-
     apnSender.setApnFallbackManager(apnFallbackManager);
     environment.lifecycle().manage(new ApplicationShutdownMonitor());
     environment.lifecycle().manage(apnFallbackManager);
     environment.lifecycle().manage(pubSubManager);
     environment.lifecycle().manage(messageSender);
     environment.lifecycle().manage(accountDatabaseCrawler);
-    environment.lifecycle().manage(deletedAccountsTableCrawler);
     environment.lifecycle().manage(remoteConfigsManager);
     environment.lifecycle().manage(messagesCache);
     environment.lifecycle().manage(messagePersister);
@@ -532,7 +497,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     environment.lifecycle().manage(currencyManager);
     environment.lifecycle().manage(torExitNodeManager);
     environment.lifecycle().manage(asnManager);
-    environment.lifecycle().manage(directoryQueue);
 
     StaticCredentialsProvider cdnCredentialsProvider = StaticCredentialsProvider
         .create(AwsBasicCredentials.create(
@@ -601,7 +565,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
         new CertificateController(new CertificateGenerator(config.getDeliveryCertificate().getCertificate(), config.getDeliveryCertificate().getPrivateKey(), config.getDeliveryCertificate().getExpiresDays()), zkAuthOperations),
         new ChallengeController(rateLimitChallengeManager),
         new DeviceController(pendingDevicesManager, accountsManager, messagesManager, keysDynamoDb, rateLimiters, config.getMaxDevices()),
-        new DirectoryController(directoryCredentialsGenerator),
         new MessageController(rateLimiters, messageSender, receiptSender, accountsManager, messagesManager, unsealedSenderRateLimiter, apnFallbackManager,
             rateLimitChallengeManager, reportMessageManager, multiRecipientMessageExecutor),
         new PaymentsController(currencyManager),

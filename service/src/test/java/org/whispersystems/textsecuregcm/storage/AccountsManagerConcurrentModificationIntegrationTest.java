@@ -39,7 +39,6 @@ import org.whispersystems.textsecuregcm.entities.SignedPreKey;
 import org.whispersystems.textsecuregcm.push.ClientPresenceManager;
 import org.whispersystems.textsecuregcm.securebackup.SecureBackupClient;
 import org.whispersystems.textsecuregcm.securestorage.SecureStorageClient;
-import org.whispersystems.textsecuregcm.sqs.DirectoryQueue;
 import org.whispersystems.textsecuregcm.tests.util.JsonHelpers;
 import org.whispersystems.textsecuregcm.tests.util.RedisClusterHelper;
 import org.whispersystems.textsecuregcm.util.Pair;
@@ -116,7 +115,6 @@ class AccountsManagerConcurrentModificationIntegrationTest {
           accounts,
           RedisClusterHelper.buildMockRedisCluster(commands),
           deletedAccountsManager,
-          mock(DirectoryQueue.class),
           mock(KeysDynamoDb.class),
           mock(MessagesManager.class),
           mock(UsernamesManager.class),

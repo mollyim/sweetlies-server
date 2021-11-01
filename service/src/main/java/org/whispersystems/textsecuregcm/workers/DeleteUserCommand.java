@@ -34,7 +34,6 @@ import org.whispersystems.textsecuregcm.push.ClientPresenceManager;
 import org.whispersystems.textsecuregcm.redis.FaultTolerantRedisCluster;
 import org.whispersystems.textsecuregcm.securebackup.SecureBackupClient;
 import org.whispersystems.textsecuregcm.securestorage.SecureStorageClient;
-import org.whispersystems.textsecuregcm.sqs.DirectoryQueue;
 import org.whispersystems.textsecuregcm.storage.Account;
 import org.whispersystems.textsecuregcm.storage.Accounts;
 import org.whispersystems.textsecuregcm.storage.AccountsManager;
@@ -154,8 +153,7 @@ public class DeleteUserCommand extends EnvironmentCommand<WhisperServerConfigura
           .build();
 
       DeletedAccounts deletedAccounts = new DeletedAccounts(deletedAccountsDynamoDbClient,
-          configuration.getDeletedAccountsDynamoDbConfiguration().getTableName(),
-          configuration.getDeletedAccountsDynamoDbConfiguration().getNeedsReconciliationIndexName());
+          configuration.getDeletedAccountsDynamoDbConfiguration().getTableName());
       VerificationCodeStore pendingAccounts = new VerificationCodeStore(pendingAccountsDynamoDbClient,
           configuration.getPendingAccountsDynamoDbConfiguration().getTableName());
 
@@ -190,8 +188,6 @@ public class DeleteUserCommand extends EnvironmentCommand<WhisperServerConfigura
       MessagesCache messagesCache = new MessagesCache(messageInsertCacheCluster, messageReadDeleteCluster,
           keyspaceNotificationDispatchExecutor);
       PushLatencyManager pushLatencyManager = new PushLatencyManager(metricsCluster);
-      DirectoryQueue directoryQueue = new DirectoryQueue(
-          configuration.getDirectoryConfiguration().getSqsConfiguration());
       UsernamesManager usernamesManager = new UsernamesManager(usernames, reservedUsernames, cacheCluster);
       ProfilesManager profilesManager = new ProfilesManager(profiles, cacheCluster);
       ReportMessageDynamoDb reportMessageDynamoDb = new ReportMessageDynamoDb(reportMessagesDynamoDb,
@@ -206,7 +202,7 @@ public class DeleteUserCommand extends EnvironmentCommand<WhisperServerConfigura
           configuration.getDeletedAccountsLockDynamoDbConfiguration().getTableName());
       StoredVerificationCodeManager pendingAccountsManager = new StoredVerificationCodeManager(pendingAccounts);
       AccountsManager accountsManager = new AccountsManager(accounts, cacheCluster,
-          deletedAccountsManager, directoryQueue, keysDynamoDb, messagesManager, usernamesManager, profilesManager,
+          deletedAccountsManager, keysDynamoDb, messagesManager, usernamesManager, profilesManager,
           pendingAccountsManager, secureStorageClient, secureBackupClient, clientPresenceManager);
 
       for (String user : users) {

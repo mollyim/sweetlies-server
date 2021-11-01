@@ -22,8 +22,6 @@ import org.whispersystems.textsecuregcm.configuration.AwsAttachmentsConfiguratio
 import org.whispersystems.textsecuregcm.configuration.CdnConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DatabaseConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DatadogConfiguration;
-import org.whispersystems.textsecuregcm.configuration.DeletedAccountsDynamoDbConfiguration;
-import org.whispersystems.textsecuregcm.configuration.DirectoryConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DynamoDbClientConfiguration;
 import org.whispersystems.textsecuregcm.configuration.DynamoDbConfiguration;
 import org.whispersystems.textsecuregcm.configuration.GcmConfiguration;
@@ -107,11 +105,6 @@ public class WhisperServerConfiguration extends Configuration {
   @NotNull
   @Valid
   @JsonProperty
-  private DirectoryConfiguration directory;
-
-  @NotNull
-  @Valid
-  @JsonProperty
   private AccountDatabaseCrawlerConfiguration accountDatabaseCrawler;
 
   @NotNull
@@ -152,7 +145,7 @@ public class WhisperServerConfiguration extends Configuration {
   @Valid
   @NotNull
   @JsonProperty
-  private DeletedAccountsDynamoDbConfiguration deletedAccountsDynamoDb;
+  private DynamoDbConfiguration deletedAccountsDynamoDb;
 
   @Valid
   @NotNull
@@ -348,10 +341,6 @@ public class WhisperServerConfiguration extends Configuration {
     return metricsCluster;
   }
 
-  public DirectoryConfiguration getDirectoryConfiguration() {
-    return directory;
-  }
-
   public SecureStorageServiceConfiguration getSecureStorageServiceConfiguration() {
     return storageService;
   }
@@ -388,7 +377,7 @@ public class WhisperServerConfiguration extends Configuration {
     return accountsDynamoDb;
   }
 
-  public DeletedAccountsDynamoDbConfiguration getDeletedAccountsDynamoDbConfiguration() {
+  public DynamoDbConfiguration getDeletedAccountsDynamoDbConfiguration() {
     return deletedAccountsDynamoDb;
   }
 

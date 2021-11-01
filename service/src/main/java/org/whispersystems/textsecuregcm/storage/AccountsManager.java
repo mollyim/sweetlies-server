@@ -33,7 +33,6 @@ import org.whispersystems.textsecuregcm.redis.FaultTolerantRedisCluster;
 import org.whispersystems.textsecuregcm.redis.RedisOperation;
 import org.whispersystems.textsecuregcm.securebackup.SecureBackupClient;
 import org.whispersystems.textsecuregcm.securestorage.SecureStorageClient;
-import org.whispersystems.textsecuregcm.sqs.DirectoryQueue;
 import org.whispersystems.textsecuregcm.util.Constants;
 import org.whispersystems.textsecuregcm.util.SystemMapper;
 import org.whispersystems.textsecuregcm.util.Util;
@@ -62,7 +61,6 @@ public class AccountsManager {
   private final Accounts accounts;
   private final FaultTolerantRedisCluster cacheCluster;
   private final DeletedAccountsManager deletedAccountsManager;
-  private final DirectoryQueue            directoryQueue;
   private final KeysDynamoDb              keysDynamoDb;
   private final MessagesManager messagesManager;
   private final UsernamesManager usernamesManager;
@@ -87,7 +85,6 @@ public class AccountsManager {
 
   public AccountsManager(Accounts accounts, FaultTolerantRedisCluster cacheCluster,
       final DeletedAccountsManager deletedAccountsManager,
-      final DirectoryQueue directoryQueue,
       final KeysDynamoDb keysDynamoDb, final MessagesManager messagesManager,
       final UsernamesManager usernamesManager,
       final ProfilesManager profilesManager,
@@ -98,7 +95,6 @@ public class AccountsManager {
     this.accounts = accounts;
     this.cacheCluster = cacheCluster;
     this.deletedAccountsManager = deletedAccountsManager;
-    this.directoryQueue = directoryQueue;
     this.keysDynamoDb = keysDynamoDb;
     this.messagesManager = messagesManager;
     this.usernamesManager = usernamesManager;
@@ -179,11 +175,6 @@ public class AccountsManager {
         }
 
         Metrics.counter(CREATE_COUNTER_NAME, tags).increment();
-
-        if (!account.isDiscoverableByPhoneNumber()) {
-          // The newly-created account has explicitly opted out of discoverability
-          directoryQueue.deleteAccount(account);
-        }
       });
 
       return account;
@@ -221,7 +212,6 @@ public class AccountsManager {
           () -> dynamoGet(uuid).orElseThrow());
 
       updatedAccount.set(numberChangedAccount);
-      directoryQueue.changePhoneNumber(numberChangedAccount, originalNumber, number);
 
       return displacedUuid;
     });
@@ -267,8 +257,6 @@ public class AccountsManager {
    */
   private Account update(Account account, Function<Account, Boolean> updater) {
 
-    final boolean wasVisibleBeforeUpdate = account.shouldBeVisibleInDirectory();
-
     final Account updatedAccount;
 
     try (Timer.Context ignored = updateTimer.time()) {
@@ -288,12 +276,6 @@ public class AccountsManager {
       }
 
       redisSet(updatedAccount);
-    }
-
-    final boolean isVisibleAfterUpdate = updatedAccount.shouldBeVisibleInDirectory();
-
-    if (wasVisibleBeforeUpdate != isVisibleAfterUpdate) {
-      directoryQueue.refreshAccount(updatedAccount);
     }
 
     return updatedAccount;
@@ -385,7 +367,6 @@ public class AccountsManager {
     try (final Timer.Context ignored = deleteTimer.time()) {
       deletedAccountsManager.lockAndPut(account.getNumber(), () -> {
         delete(account);
-        directoryQueue.deleteAccount(account);
 
         return account.getUuid();
       });

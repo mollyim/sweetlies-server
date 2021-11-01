@@ -48,9 +48,6 @@ public class DynamicConfiguration {
   @Valid
   private DynamicRateLimitChallengeConfiguration rateLimitChallenge = new DynamicRateLimitChallengeConfiguration();
 
-  @JsonProperty
-  private DynamicDirectoryReconcilerConfiguration directoryReconciler = new DynamicDirectoryReconcilerConfiguration();
-
   public Optional<DynamicExperimentEnrollmentConfiguration> getExperimentEnrollmentConfiguration(
       final String experimentName) {
     return Optional.ofNullable(experiments.get(experimentName));
@@ -96,9 +93,5 @@ public class DynamicConfiguration {
 
   public DynamicRateLimitChallengeConfiguration getRateLimitChallengeConfiguration() {
     return rateLimitChallenge;
-  }
-
-  public DynamicDirectoryReconcilerConfiguration getDirectoryReconcilerConfiguration() {
-    return directoryReconciler;
   }
 }

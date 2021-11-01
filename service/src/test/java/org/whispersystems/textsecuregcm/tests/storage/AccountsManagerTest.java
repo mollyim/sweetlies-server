@@ -44,7 +44,6 @@ import org.whispersystems.textsecuregcm.entities.SignedPreKey;
 import org.whispersystems.textsecuregcm.push.ClientPresenceManager;
 import org.whispersystems.textsecuregcm.securebackup.SecureBackupClient;
 import org.whispersystems.textsecuregcm.securestorage.SecureStorageClient;
-import org.whispersystems.textsecuregcm.sqs.DirectoryQueue;
 import org.whispersystems.textsecuregcm.storage.Account;
 import org.whispersystems.textsecuregcm.storage.Accounts;
 import org.whispersystems.textsecuregcm.storage.AccountsManager;
@@ -63,7 +62,6 @@ class AccountsManagerTest {
 
   private Accounts accounts;
   private DeletedAccountsManager deletedAccountsManager;
-  private DirectoryQueue directoryQueue;
   private KeysDynamoDb keys;
   private MessagesManager messagesManager;
   private ProfilesManager profilesManager;
@@ -83,7 +81,6 @@ class AccountsManagerTest {
   void setup() throws InterruptedException {
     accounts = mock(Accounts.class);
     deletedAccountsManager = mock(DeletedAccountsManager.class);
-    directoryQueue = mock(DirectoryQueue.class);
     keys = mock(KeysDynamoDb.class);
     messagesManager = mock(MessagesManager.class);
     profilesManager = mock(ProfilesManager.class);
@@ -116,7 +113,6 @@ class AccountsManagerTest {
         accounts,
         RedisClusterHelper.buildMockRedisCluster(commands),
         deletedAccountsManager,
-        directoryQueue,
         keys,
         messagesManager,
         mock(UsernamesManager.class),
@@ -398,10 +394,6 @@ class AccountsManagerTest {
     final Account account = accountsManager.create("+18005550123", "password", null, attributes);
 
     assertEquals(discoverable, account.isDiscoverableByPhoneNumber());
-
-    if (!discoverable) {
-      verify(directoryQueue).deleteAccount(account);
-    }
   }
 
   @ParameterizedTest
@@ -413,34 +405,6 @@ class AccountsManagerTest {
     final Account account = accountsManager.create("+18005550123", "password", null, attributes);
 
     assertEquals(hasStorage, account.isStorageSupported());
-  }
-
-  @ParameterizedTest
-  @MethodSource
-  void testUpdateDirectoryQueue(final boolean visibleBeforeUpdate, final boolean visibleAfterUpdate,
-      final boolean expectRefresh) {
-    final Account account = new Account("+14152222222", UUID.randomUUID(), new HashSet<>(), new byte[16]);
-
-    // this sets up the appropriate result for Account#shouldBeVisibleInDirectory
-    final Device device = new Device(Device.MASTER_ID, "device", "token", "salt", null, null, null, true, 1,
-        new SignedPreKey(1, "key", "sig"), 0, 0,
-        "OWT", 0, new DeviceCapabilities());
-    account.addDevice(device);
-    account.setDiscoverableByPhoneNumber(visibleBeforeUpdate);
-
-    final Account updatedAccount = accountsManager.update(account,
-        a -> a.setDiscoverableByPhoneNumber(visibleAfterUpdate));
-
-    verify(directoryQueue, times(expectRefresh ? 1 : 0)).refreshAccount(updatedAccount);
-  }
-
-  @SuppressWarnings("unused")
-  private static Stream<Arguments> testUpdateDirectoryQueue() {
-    return Stream.of(
-        Arguments.of(false, false, false),
-        Arguments.of(true, true, false),
-        Arguments.of(false, true, true),
-        Arguments.of(true, false, true));
   }
 
   @ParameterizedTest
@@ -480,8 +444,6 @@ class AccountsManagerTest {
     account = accountsManager.changeNumber(account, targetNumber);
 
     assertEquals(targetNumber, account.getNumber());
-
-    verify(directoryQueue).changePhoneNumber(argThat(a -> a.getUuid().equals(uuid)), eq(originalNumber), eq(targetNumber));
   }
 
   @Test
@@ -493,7 +455,6 @@ class AccountsManagerTest {
 
     assertEquals(number, account.getNumber());
     verify(deletedAccountsManager, never()).lockAndPut(anyString(), anyString(), any());
-    verify(directoryQueue, never()).changePhoneNumber(any(), any(), any());
   }
 
   @Test
@@ -513,9 +474,6 @@ class AccountsManagerTest {
     account = accountsManager.changeNumber(account, targetNumber);
 
     assertEquals(targetNumber, account.getNumber());
-
-    verify(directoryQueue).changePhoneNumber(argThat(a -> a.getUuid().equals(uuid)), eq(originalNumber), eq(targetNumber));
-    verify(directoryQueue, never()).deleteAccount(any());
   }
 
   @Test

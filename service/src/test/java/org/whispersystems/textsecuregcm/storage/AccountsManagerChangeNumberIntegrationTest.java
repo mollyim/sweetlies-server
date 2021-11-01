@@ -27,16 +27,11 @@ import org.whispersystems.textsecuregcm.push.ClientPresenceManager;
 import org.whispersystems.textsecuregcm.redis.RedisClusterExtension;
 import org.whispersystems.textsecuregcm.securebackup.SecureBackupClient;
 import org.whispersystems.textsecuregcm.securestorage.SecureStorageClient;
-import org.whispersystems.textsecuregcm.sqs.DirectoryQueue;
 import org.whispersystems.textsecuregcm.storage.Device.DeviceCapabilities;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
-import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 import software.amazon.awssdk.services.dynamodb.model.KeyType;
-import software.amazon.awssdk.services.dynamodb.model.Projection;
-import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
-import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 
 class AccountsManagerChangeNumberIntegrationTest {
@@ -47,7 +42,6 @@ class AccountsManagerChangeNumberIntegrationTest {
 
   private static final String ACCOUNTS_TABLE_NAME = "accounts_test";
   private static final String NUMBERS_TABLE_NAME = "numbers_test";
-  private static final String NEEDS_RECONCILIATION_INDEX_NAME = "needs_reconciliation_test";
   private static final String DELETED_ACCOUNTS_LOCK_TABLE_NAME = "deleted_accounts_lock_test";
   private static final int SCAN_PAGE_SIZE = 1;
 
@@ -68,17 +62,6 @@ class AccountsManagerChangeNumberIntegrationTest {
       .attributeDefinition(AttributeDefinition.builder()
           .attributeName(DeletedAccounts.KEY_ACCOUNT_E164)
           .attributeType(ScalarAttributeType.S).build())
-      .attributeDefinition(AttributeDefinition.builder()
-          .attributeName(DeletedAccounts.ATTR_NEEDS_CDS_RECONCILIATION)
-          .attributeType(ScalarAttributeType.N)
-          .build())
-      .globalSecondaryIndex(GlobalSecondaryIndex.builder()
-          .indexName(NEEDS_RECONCILIATION_INDEX_NAME)
-          .keySchema(KeySchemaElement.builder().attributeName(DeletedAccounts.KEY_ACCOUNT_E164).keyType(KeyType.HASH).build(),
-              KeySchemaElement.builder().attributeName(DeletedAccounts.ATTR_NEEDS_CDS_RECONCILIATION).keyType(KeyType.RANGE).build())
-          .projection(Projection.builder().projectionType(ProjectionType.INCLUDE).nonKeyAttributes(DeletedAccounts.ATTR_ACCOUNT_UUID).build())
-          .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(10L).writeCapacityUnits(10L).build())
-          .build())
       .build();
 
   @RegisterExtension
@@ -131,8 +114,7 @@ class AccountsManagerChangeNumberIntegrationTest {
       when(dynamicConfigurationManager.getConfiguration()).thenReturn(dynamicConfiguration);
 
       deletedAccounts = new DeletedAccounts(DELETED_ACCOUNTS_DYNAMO_EXTENSION.getDynamoDbClient(),
-          DELETED_ACCOUNTS_DYNAMO_EXTENSION.getTableName(),
-          NEEDS_RECONCILIATION_INDEX_NAME);
+          DELETED_ACCOUNTS_DYNAMO_EXTENSION.getTableName());
 
       final DeletedAccountsManager deletedAccountsManager = new DeletedAccountsManager(deletedAccounts,
           DELETED_ACCOUNTS_LOCK_DYNAMO_EXTENSION.getLegacyDynamoClient(),
@@ -150,7 +132,6 @@ class AccountsManagerChangeNumberIntegrationTest {
           accounts,
           CACHE_CLUSTER_EXTENSION.getRedisCluster(),
           deletedAccountsManager,
-          mock(DirectoryQueue.class),
           mock(KeysDynamoDb.class),
           mock(MessagesManager.class),
           mock(UsernamesManager.class),
