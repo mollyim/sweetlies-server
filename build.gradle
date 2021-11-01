@@ -1,6 +1,7 @@
 plugins {
     id 'com.google.protobuf' version '0.8.17' apply false
     id 'com.google.cloud.tools.jib' version '3.1.4' apply false
+    id 'org.ysb33r.terraform' version '0.12.2'
 }
 
 allprojects {
@@ -78,6 +79,15 @@ subprojects {
     tasks.withType(AbstractArchiveTask) {
         preserveFileTimestamps = false
         reproducibleFileOrder = true
+    }
+}
+
+terraformSourceSets {
+    dev {
+        srcDir = 'terraform'
+        variables {
+            file 'env/dev.tfvars'
+        }
     }
 }
 

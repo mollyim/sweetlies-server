@@ -3,3 +3,7 @@ build/
 .idea/
 local.properties
 *.iml
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log

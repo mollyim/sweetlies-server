@@ -1,0 +1,58 @@
+version: "2.4"
+
+services:
+  accountdb:
+    image: postgres:14.0-alpine
+    user: "postgres"
+    healthcheck:
+      test: [ CMD-SHELL, "pg_isready -d accounts" ]
+    ports:
+      - "5432:5432"
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+      - "POSTGRES_DB=accounts"
+    volumes:
+      - "dev-accountdb-data:/var/lib/postgresql/data"
+
+  abusedb:
+    image: postgres:14.0-alpine
+    user: "postgres"
+    healthcheck:
+      test: [ CMD-SHELL, "pg_isready -d abuse" ]
+    ports:
+      - "5433:5432"
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+      - "POSTGRES_DB=abuse"
+    volumes:
+      - "dev-abusedb-data:/var/lib/postgresql/data"
+
+  redis-cluster:
+    image: grokzen/redis-cluster:6.2.0
+    ports:
+      - "7000-7002:7000-7002"
+    healthcheck:
+      test: [ CMD-SHELL, "redis-cli -p 7000 cluster info | grep ^cluster_state:ok" ]
+    environment:
+      - "SLAVES_PER_MASTER=0"
+      - "IP=0.0.0.0"
+    volumes:
+      - "dev-redis-data:/redis-data"
+
+  localstack:
+    image: localstack/localstack:0.12.19.1
+    healthcheck:
+      test: [ CMD-SHELL, "awslocal dynamodb list-tables && awslocal s3 ls" ]
+    ports:
+      - "4566:4566"
+    environment:
+      - "SERVICES=dynamodb,s3,sts"
+      - "DATA_DIR=/tmp/localstack/data"
+    volumes:
+      - "dev-localstack-data:/tmp/localstack"
+
+volumes:
+  dev-accountdb-data:
+  dev-abusedb-data:
+  dev-redis-data:
+  dev-localstack-data:

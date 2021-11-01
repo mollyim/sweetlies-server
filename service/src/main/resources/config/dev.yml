@@ -1,0 +1,293 @@
+server:
+  applicationConnectors:
+    - type: http
+      bindHost: ${HTTP_HOST:-127.0.0.1}
+      port: ${HTTP_PORT:-8080}
+  adminConnectors:
+    - type: http
+      bindHost: ${ADMIN_HOST:-127.0.0.1}
+      port: ${ADMIN_HTTP_PORT:-8081}
+
+dynamoDbClientConfiguration:
+  region: ${AWS_REGION}
+
+twilio: # Twilio gateway configuration
+  accountId: test
+  accountToken: test
+  nanpaMessagingServiceSid: test
+  messagingServiceSid: test
+  verifyServiceSid: test
+  localDomain: test
+  defaultClientVerificationTexts:
+    ios: test
+    androidNg: test
+    android202001: test
+    android202103: test
+    generic: test
+  androidAppHash: test
+  verifyServiceFriendlyName: test
+
+push:
+  queueSize: # Size of push pending queue
+
+turn: # TURN server configuration
+  secret: test
+  uris:
+    - stun:test:80
+    - stun:test:443
+    - turn:test:443?transport=udpq
+    - turn:test:80?transport=udp
+
+cacheCluster: # Redis server configuration for cache cluster
+  configurationUri: ${REDIS_CLUSTER_BASE_URL}/1
+  timeout: 30
+
+clientPresenceCluster: # Redis server configuration for client presence cluster
+  configurationUri: ${REDIS_CLUSTER_BASE_URL}/2
+  timeout: 30
+
+pubsub: # Redis server configuration for pubsub cluster
+  url: ${REDIS_CLUSTER_BASE_URL}/0
+  replicaUrls:
+    - ${REDIS_CLUSTER_BASE_URL}/0
+
+pushSchedulerCluster: # Redis server configuration for push scheduler cluster
+  configurationUri: ${REDIS_CLUSTER_BASE_URL}/3
+  timeout: 30
+
+rateLimitersCluster: # Redis server configuration for rate limiters cluster
+  configurationUri: ${REDIS_CLUSTER_BASE_URL}/4
+  timeout: 30
+
+messageCache: # Redis server configuration for message store cache
+  cluster:
+    configurationUri: ${REDIS_CLUSTER_BASE_URL}/5
+    timeout: 30
+
+metricsCluster:
+  configurationUri: ${REDIS_CLUSTER_BASE_URL}/6
+  timeout: 30
+
+messageDynamoDb: # DynamoDB table configuration
+  region: ${AWS_REGION}
+  tableName: Messages
+
+keysDynamoDb: # DynamoDB table configuration
+  region: ${AWS_REGION}
+  tableName: Keys
+
+accountsDynamoDb: # DynamoDB table configuration
+  region: ${AWS_REGION}
+  tableName: Accounts
+  phoneNumberTableName: PhoneNumbers
+
+deletedAccountsDynamoDb: # DynamoDb table configuration
+  region: ${AWS_REGION}
+  tableName: DeleteAccounts
+
+deletedAccountsLockDynamoDb: # DynamoDb table configuration
+  region: ${AWS_REGION}
+  tableName: DeleteAccountsLock
+
+pendingAccountsDynamoDb: # DynamoDB table configuration
+  region: ${AWS_REGION}
+  tableName: PendingAccounts
+
+pendingDevicesDynamoDb: # DynamoDB table configuration
+  region: ${AWS_REGION}
+  tableName: PendingDevices
+
+pushChallengeDynamoDb: # DynamoDB table configuration
+  region: ${AWS_REGION}
+  tableName: PushChallenges
+
+reportMessageDynamoDb: # DynamoDB table configuration
+  region: ${AWS_REGION}
+  tableName: ReportMessages
+
+awsAttachments: # AWS S3 configuration
+  accessKey: test
+  accessSecret: test
+  bucket: attachments
+  region: ${AWS_REGION}
+
+gcpAttachments: # GCP Storage configuration
+  domain: test
+  email: test
+  maxSizeInBytes: 1
+  rsaSigningKey: |
+    -----BEGIN PRIVATE KEY-----
+    MIICdQIBADALBgkqhkiG9w0BAQEEggJhMIICXQIBAAKBgQC7JHoJfg6yNzLMOWet
+    8Z49a4KD0dCspMAYvo2YAMB7/wdEycocujbhJ2n/seONi+5XqTqqFkM5VBl8rmkk
+    FPZk/7x0xmdsTPECSWnHK+HhoaNDFPR3j8jQhVo1laxiqcEhAHegi5cwtFosuJAv
+    SKAFKEvyD43si00DQnXWrYHAEQIDAQABAoGAAPy5SiYHiVErU3KR4Bg+pl4x75wM
+    FiRC0Cgz+frQPFQEBsAV9RuasyQxqzxrR0Ow0qncBeGBWbYE6WZhqtcLAI895b+i
+    +F4lbB4iD7T9QeIDMV/aIMXA81UO4cns1z4qDAHKeyLLrPQrJ/B4X7XC+egUWm5+
+    hr1qmyAMusyXIBECQQDJWZ8piluf4yrYfsJAn6hF5T4RjTztbqvO0GVG2McHY7Uj
+    NPSffhzHx/ll0fQEQji+OgydCCX8o3HZrgw5YfSJAkEA7e+rqdU5nO5ZG//PSEQb
+    tjLnRiTzBH/elQhtdZ5nF7pcpNTi4k13zutmKcWW4GK75azcRGJUhu1kDM7QYAOd
+    SQJAVNkYcifkvna7GmooL5VYEsQsqLbM4v0NF2TIGNfG3z1MGp75KrC5LhL97MNR
+    we2p/bd2k0HYyCKUGnf2nMPDiQJBAI75pwittSoE240EobUGIDTSz8CJsXIxuDmL
+    z+KOpdpPRR5TQmbEMEspjsFpFymMiuYPgmihQbO2cJl1qScY5OkCQQCJ6m5tcN8l
+    Xxg/SNpjEIv+qAyUD96XVlOJlOIeLHQ8kYE0C6ZA+MsqYIzgAreJk88Yn0lU/X0/
+    mu/UpE/BRZmR
+    -----END PRIVATE KEY-----
+
+abuseDatabase: # Postgresql database configuration
+  driverClass: org.postgresql.Driver
+  user: postgres
+  password: postgres
+  url: ${ABUSE_DB_URL}
+
+accountsDatabase: # Postgresql database configuration
+  driverClass: org.postgresql.Driver
+  user: postgres
+  password: postgres
+  url: ${ACCOUNTS_DB_URL}
+
+accountDatabaseCrawler:
+  chunkSize: # accounts per run
+  chunkIntervalMs: # time per run
+
+apn: # Apple Push Notifications configuration
+  sandbox: true
+  bundleId: test
+  keyId: test
+  teamId: test
+  signingKey: |
+    -----BEGIN PRIVATE KEY-----
+    MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgir767IOFOYHsYtNQ
+    wsvLeJVu3bxCLL/SURQvMZw6QumgCgYIKoZIzj0DAQehRANCAARuwGOLtHY99zLl
+    iyACJp6xmj6YfE8bOLxHTZGkoC/+yNgf/fBpwf5Nin2pzyM8FUOYXg1R1v2bQqJy
+    wHYtSkc1
+    -----END PRIVATE KEY----
+
+gcm: # GCM Configuration
+  senderId: 9999
+  apiKey: test
+
+cdn:
+  accessKey: test
+  accessSecret: test
+  bucket: CDN
+  region: ${AWS_REGION}
+
+datadog:
+  apiKey: test
+  environment: test
+
+unidentifiedDelivery:
+  certificate: CiUIARIhBaXYSgI1RJwALheDXpRKOhaJR8pR7BFKiJeWIxcWiycdEkCcrSomdnUf40mP8tU1tG0ZGRpjlaJHkGOS+FxBruC6MMcd27YgfJLKMCmh6A29REwG5BYhN3bFjmyh1sT8GrsL
+  privateKey: ILk+eFEBzWXLVTBeltxxAiz2AeY4iWdV0XFlV21+aX8=
+  expiresDays: 356
+
+voiceVerification:
+  url: test
+  locales:
+    - en
+
+recaptcha:
+  secret: test
+
+recaptchaV2:
+  siteKey: test
+  scoreFloor: 1.0
+  projectPath: test
+  credentialConfigurationJson: |
+    {
+      "type": "service_account",
+      "project_id": "project-id",
+      "private_key_id": "d84a4fefcf50791d4a90f2d7af17469d6282df9d",
+      "private_key": "-----BEGIN PRIVATE KEY-----\nMIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBALX0PQoe1igW12ikv1bN/r9lN749y2ijmbc/mFHPyS3hNTyOCjDvBbXYbDhQJzWVUikh4mvGBA07qTj79Xc3yBDfKP2IeyYQIFe0t0zkd7R9Zdn98Y2rIQC47aAbDfubtkU1U72t4zL11kHvoa0/RuFZjncvlr42X7be7lYh4p3NAgMBAAECgYASk5wDw4Az2ZkmeuN6Fk/y9H+Lcb2pskJIXjrL533vrDWGOC48LrsThMQPv8cxBky8HFSEklPpkfTF95tpD43iVwJRB/GrCtGTw65IfJ4/tI09h6zGc4yqvIo1cHX/LQ+SxKLGyir/dQM925rGt/VojxY5ryJR7GLbCzxPnJm/oQJBANwOCO6D2hy1LQYJhXh7O+RLtA/tSnT1xyMQsGT+uUCMiKS2bSKx2wxo9k7h3OegNJIu1q6nZ6AbxDK8H3+d0dUCQQDTrPSXagBxzp8PecbaCHjzNRSQE2in81qYnrAFNB4o3DpHyMMY6s5ALLeHKscEWnqP8Ur6X4PvzZecCWU9BKAZAkAutLPknAuxSCsUOvUfS1i87ex77Ot+w6POp34pEX+UWb+u5iFn2cQacDTHLV1LtE80L8jVLSbrbrlH43H0DjU5AkEAgidhycxS86dxpEljnOMCw8CKoUBd5I880IUahEiUltk7OLJYS/Ts1wbn3kPOVX3wyJs8WBDtBkFrDHW2ezth2QJADj3e1YhMVdjJW5jqwlD/VNddGjgzyunmiZg0uOXsHXbytYmsA545S8KRQFaJKFXYYFo2kOjqOiC1T2cAzMDjCQ==\n-----END PRIVATE KEY-----\n",
+      "client_email": "36680232662-vrd7ji19qe3nelgchd0ah2csanun6bnr@developer.gserviceaccount.com",
+      "client_id": "36680232662-vrd7ji19qe3nelgchd0ah2csanun6bnr.apps.googleusercontent.com"
+    }
+
+storageService:
+  uri: test
+  userAuthenticationTokenSharedSecret: c597c0cc3169b84b4420d206bfdb14e2
+  storageCaCertificate: |
+    -----BEGIN CERTIFICATE-----
+    MIIDlzCCAk+gAwIBAgIETadUITANBgkqhkiG9w0BAQsFADAyMQswCQYDVQQGEwJC
+    RTEPMA0GA1UEChMGR251VExTMRIwEAYDVQQDEwlsb2NhbGhvc3QwHhcNMTEwNDE0
+    MjAwODAyWhcNMzgwODI5MjAwODA0WjAyMQswCQYDVQQGEwJCRTEPMA0GA1UEChMG
+    R251VExTMRIwEAYDVQQDEwlsb2NhbGhvc3QwggFSMA0GCSqGSIb3DQEBAQUAA4IB
+    PwAwggE6AoIBMQDdz5fSpR2V3YYY2MS5raYMtJ223PrcIeE6YjQH6DOy6JfuLEHS
+    EvFf7eR2/2UmHgzHQRVpXw35rYkUjerXFlKaR8G7AALkiEVzeKSu2zjDxgfSZA6H
+    7XSMa8TAAlB8TqbRWOnlEwmp21rq6w8GgFwJ75TI6fs3LnXhrJOtmzcTS2Y6djPY
+    xNdM+2HIkiEH/N+piFTko6lH0my44zmJEYg4LaLcPl5KqaSO1R+y0N1BPNoQaJ5H
+    G2UCosUocwKDAwn99Sl+l9wqTkuqeUZGcIYbm7j2ir4ph31f2qWXa+/IQwlD4h+K
+    Fn4dUF312gLu8sMqSOZrMOoC1++siwy4wYXYv3yFqB6DvlwmLnl7R/VKP2Zikv1B
+    ILYsAPBSyiYGLXzPelB9D8vdlyDIb+TgUPTjAgMBAAGjVTBTMAwGA1UdEwEB/wQC
+    MAAwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDwYDVR0PAQH/BAUDAwegADAdBgNVHQ4E
+    FgQUklPWcbn4aKqzU/aN9TlFZpyn5TEwDQYJKoZIhvcNAQELBQADggExAJi/SInB
+    5uYVE8z8uu2gieWGRTBzaLJ5H4gCgPstybghVY3Ft1Ybz8N27tDw2SI6Y5LFBIZw
+    HkIzKjvEFAjFQpJzfD45wO40xzMWX5Ouzx+aMAlR/i2UnCitKn7kFIFFaw3XESH8
+    2ycXdLTMlBpunntYqeAGjdpfYOG4byhotli+xaw2Rzf2qDh0I4HzIr5h/wgIh+vC
+    jykldV1M69UJKKt7mflpCKLGAtIuzfrxGc4/RGqhS6hW1RGuRONoBVBXjXIPxyHb
+    j6NQeF1aOcuQPVJDM7/qiQcaksyFJ6g9NLhbUu7vILm2/+rFkNNHxVGQ4uY+Urke
+    eRi+/eIkvkcyWrADa6rbw9v2YEQItiwZR6LwQ3/wB5dXq+yguGpJzgjmw03ypOm4
+    Q+fwhNcachRdgho=
+    -----END CERTIFICATE-----
+
+backupService:
+  uri: test
+  userAuthenticationTokenSharedSecret: 231ffce57ce6542f753da437c712caab
+  backupCaCertificate: |
+    -----BEGIN CERTIFICATE-----
+    MIIDlzCCAk+gAwIBAgIETadUITANBgkqhkiG9w0BAQsFADAyMQswCQYDVQQGEwJC
+    RTEPMA0GA1UEChMGR251VExTMRIwEAYDVQQDEwlsb2NhbGhvc3QwHhcNMTEwNDE0
+    MjAwODAyWhcNMzgwODI5MjAwODA0WjAyMQswCQYDVQQGEwJCRTEPMA0GA1UEChMG
+    R251VExTMRIwEAYDVQQDEwlsb2NhbGhvc3QwggFSMA0GCSqGSIb3DQEBAQUAA4IB
+    PwAwggE6AoIBMQDdz5fSpR2V3YYY2MS5raYMtJ223PrcIeE6YjQH6DOy6JfuLEHS
+    EvFf7eR2/2UmHgzHQRVpXw35rYkUjerXFlKaR8G7AALkiEVzeKSu2zjDxgfSZA6H
+    7XSMa8TAAlB8TqbRWOnlEwmp21rq6w8GgFwJ75TI6fs3LnXhrJOtmzcTS2Y6djPY
+    xNdM+2HIkiEH/N+piFTko6lH0my44zmJEYg4LaLcPl5KqaSO1R+y0N1BPNoQaJ5H
+    G2UCosUocwKDAwn99Sl+l9wqTkuqeUZGcIYbm7j2ir4ph31f2qWXa+/IQwlD4h+K
+    Fn4dUF312gLu8sMqSOZrMOoC1++siwy4wYXYv3yFqB6DvlwmLnl7R/VKP2Zikv1B
+    ILYsAPBSyiYGLXzPelB9D8vdlyDIb+TgUPTjAgMBAAGjVTBTMAwGA1UdEwEB/wQC
+    MAAwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDwYDVR0PAQH/BAUDAwegADAdBgNVHQ4E
+    FgQUklPWcbn4aKqzU/aN9TlFZpyn5TEwDQYJKoZIhvcNAQELBQADggExAJi/SInB
+    5uYVE8z8uu2gieWGRTBzaLJ5H4gCgPstybghVY3Ft1Ybz8N27tDw2SI6Y5LFBIZw
+    HkIzKjvEFAjFQpJzfD45wO40xzMWX5Ouzx+aMAlR/i2UnCitKn7kFIFFaw3XESH8
+    2ycXdLTMlBpunntYqeAGjdpfYOG4byhotli+xaw2Rzf2qDh0I4HzIr5h/wgIh+vC
+    jykldV1M69UJKKt7mflpCKLGAtIuzfrxGc4/RGqhS6hW1RGuRONoBVBXjXIPxyHb
+    j6NQeF1aOcuQPVJDM7/qiQcaksyFJ6g9NLhbUu7vILm2/+rFkNNHxVGQ4uY+Urke
+    eRi+/eIkvkcyWrADa6rbw9v2YEQItiwZR6LwQ3/wB5dXq+yguGpJzgjmw03ypOm4
+    Q+fwhNcachRdgho=
+    -----END CERTIFICATE-----
+
+zkConfig:
+  serverPublic: ACL4V8rh4l4xF+c0dcRg5JN4G8reoEExtEdVvbU10qYY0sPn+LPGavcjNo7FbXNhpedld6n5GrmA5rPdYXNIVAKQ2ILKRGcmox4/KTmuuW32iOBznCAOuJ/rTafroBOCFUQYXA1A8wz52aYM4iqi+YwZuWs3lbolU2hAuDFLkoBDRNwftdNT2sUD1jRy+gpBimAXIBTm28O04PUBZx6KAUVyjxemiB1emO2fA6KL7/30Pna9YQe//mu5XvLElAyOR2g4qjifCZQdOfXc7BOo6CLRLPS71GkZvYhiZKxm6F8I
+  serverSecret: ACKqqtek/wIFpHPlMFRsXcfwXAI4XHOaJzQ5/OZC57kCd4KT1aUJGQHd43NKY2UYF7xiqhwQ14ol+2DoMTfDXAkS3gupCAyLArJVUD2WF/HJiV8RuxWSFu9l+Sd7r3XPXWDSXSAW2wH/JllRnCneWQfCcMTCc5wktnmmmRHPjegCxo6EAFNfgMtmHL33VS9d6XhfsxnUFd244Hoi4TZrvw5kJjOcUR+wTF1eEvKToH8G88WFHDjjcj+nGPaCmjYiBi5yjfMPLcNelcMuhPMd7nbYkfgjBGMX0UCslP/s2DsNdG7LB7XQc7289Qlc+5IsAGAaF59ZzT7UXD64w3H65AAsKlo1EIkrVdmeB2QhxrQAR1QPDMdz2GmjfOnxn5fIBiL4V8rh4l4xF+c0dcRg5JN4G8reoEExtEdVvbU10qYY0sPn+LPGavcjNo7FbXNhpedld6n5GrmA5rPdYXNIVAIr4A+uGl6MsGgZBnk6OVRciby89VENQu/beBSSU8oYAL2m6QVZ9e/ejCF052f2+pnYOlvsyoI4Sr8ByLJRp7cMkjlHsenVAQraMJ/Quyb3RaSWWHMG8GxYz7IKk/JqAUz2y60ZYgZvGA/oVCUMeut3w8X0kBMeuu0vSJCLMYQDBPVIxrL+mmGOvqFfELbLTo5ROlVks1tJ0ZiX/IJqAWAGrXqs4u/dNEFZeaIOnU2uBctJqclc2io5H7u1VcG5ag6iDzVAmgFImEpp/SV9VLanuM3vDtBrYsP0ljq1BOlOCpuOevcHYWVs/HcfMbHr/GXbrc2BjolMKLwFk6da43MMIvlPiaD67KeBBMJgaz/JylK5S+4Dr2wOlnOsI47d8w2Q2ILKRGcmox4/KTmuuW32iOBznCAOuJ/rTafroBOCFUQYXA1A8wz52aYM4iqi+YwZuWs3lbolU2hAuDFLkoBD5MJT/K1YLrmmBbyoTjRdXLpv4YZXBRKCTZLyhM8iOwNE3B+101PaxQPWNHL6CkGKYBcgFObbw7Tg9QFnHooBRZ4P9UZxpXzH9Sa1ugyf88FwtVgs6HC46rCiSmxHwh8O139WnsUpl4xXu4X9r56HpXlqXgKvSdtYhFftfow9qQGuvZCVnA/WSZmQMBfGfEDEe+J+kBSJ2XD2uib9EnUWZG1QATEH4vpQrSmwiSOp3ysLgT6zX/nDBOW3ud0sivQOFF39ephY9qylAv9Dr5jQf26JWo06iFNA5Tm0wjS+kw+zR5y2OzZL+9i/pz6YNZsL42a4vat2hySrrFuWPY1DBtLY9G5n5kpT4DuTVjCRnW4gPN98pvGhMSOdeylOxAgHj6DYlNOtDdwiDBpkl+4MlMXzNC5nKUAfpPMmD0fPVw9YBczEfFkBn6dBFxmstesl1y47jzK8TN17QqzVnmQpCXKPF6aIHV6Y7Z8Doovv/fQ+dr1hB7/+a7le8sSUDI5HaDiqOJ8JlB059dzsE6joItEs9LvUaRm9iGJkrGboXwg
+
+appConfig:
+  enabled: false
+  application: test
+  environment: test
+  configuration: test
+  region: ${AWS_REGION}
+
+remoteConfig:
+  authorizedTokens:
+    - # 1st authorized token
+    - # 2nd authorized token
+    - # ...
+    - # Nth authorized token
+  globalConfig: # keys and values that are given to clients on GET /v1/config
+    test: test
+
+paymentsService:
+  fixerApiKey: test
+  paymentCurrencies:
+    -
+
+torExitNodeList:
+  s3Region: ${AWS_REGION}
+  s3Bucket: TorExitNodeList
+  objectKey: TorExitNodeList
+
+asnTable:
+  s3Region: ${AWS_REGION}
+  s3Bucket: AsnTable
+  objectKey: AsnTable

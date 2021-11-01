@@ -114,3 +114,26 @@ jib {
         image = 'sweetlies-whisper-service:latest'
     }
 }
+
+def devRuntimeEnvironment = [
+        AWS_REGION               : "us-east-2",
+        AWS_ACCESS_KEY_ID        : "test",
+        AWS_SECRET_ACCESS_KEY    : "test",
+        AWS_ENDPOINT_OVERRIDE    : "http://localhost:4566",
+        AWS_EC2_METADATA_DISABLED: "true",
+        ACCOUNTS_DB_URL          : "jdbc:postgresql://localhost:5432/accounts",
+        ABUSE_DB_URL             : "jdbc:postgresql://localhost:5433/abuse",
+        REDIS_CLUSTER_BASE_URL   : "redis://localhost:7000"
+]
+
+task runServer(type: JavaExec) {
+    group = 'Application'
+    classpath = sourceSets.main.runtimeClasspath
+    getMainClass().set application.getMainClass()
+
+    if (args.isEmpty()) {
+        args(['server', 'config/dev.yml'])
+    }
+
+    environment(devRuntimeEnvironment)
+}
