@@ -140,8 +140,6 @@ import org.whispersystems.textsecuregcm.push.MessageSender;
 import org.whispersystems.textsecuregcm.push.ProvisioningManager;
 import org.whispersystems.textsecuregcm.push.ReceiptSender;
 import org.whispersystems.textsecuregcm.recaptcha.EnterpriseRecaptchaClient;
-import org.whispersystems.textsecuregcm.recaptcha.LegacyRecaptchaClient;
-import org.whispersystems.textsecuregcm.recaptcha.TransitionalRecaptchaClient;
 import org.whispersystems.textsecuregcm.redis.ConnectionEventLogger;
 import org.whispersystems.textsecuregcm.redis.FaultTolerantRedisCluster;
 import org.whispersystems.textsecuregcm.redis.ReplicatedJedisPool;
@@ -462,16 +460,14 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     MessageSender            messageSender      = new MessageSender(apnFallbackManager, clientPresenceManager, messagesManager, gcmSender, apnSender, pushLatencyManager);
     ReceiptSender            receiptSender      = new ReceiptSender(accountsManager, messageSender);
     TurnTokenGenerator       turnTokenGenerator = new TurnTokenGenerator(config.getTurnConfiguration());
-    LegacyRecaptchaClient legacyRecaptchaClient = new LegacyRecaptchaClient(config.getRecaptchaConfiguration().getSecret());
     EnterpriseRecaptchaClient enterpriseRecaptchaClient = new EnterpriseRecaptchaClient(
         config.getRecaptchaV2Configuration().getScoreFloor().doubleValue(),
         config.getRecaptchaV2Configuration().getSiteKey(),
         config.getRecaptchaV2Configuration().getProjectPath(),
         config.getRecaptchaV2Configuration().getCredentialConfigurationJson());
-    TransitionalRecaptchaClient transitionalRecaptchaClient = new TransitionalRecaptchaClient(legacyRecaptchaClient, enterpriseRecaptchaClient);
     PushChallengeManager     pushChallengeManager = new PushChallengeManager(apnSender, gcmSender, pushChallengeDynamoDb);
     RateLimitChallengeManager rateLimitChallengeManager = new RateLimitChallengeManager(pushChallengeManager,
-        transitionalRecaptchaClient, preKeyRateLimiter, unsealedSenderRateLimiter, rateLimiters,
+        enterpriseRecaptchaClient, preKeyRateLimiter, unsealedSenderRateLimiter, rateLimiters,
         dynamicConfigurationManager);
 
     MessagePersister messagePersister = new MessagePersister(messagesCache, messagesManager, accountsManager, dynamicConfigurationManager, Duration.ofMinutes(config.getMessageCacheConfiguration().getPersistDelayMinutes()));
@@ -566,7 +562,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     environment.jersey().register(
         new AccountController(pendingAccountsManager, accountsManager, usernamesManager, abusiveHostRules, rateLimiters,
             smsSender, dynamicConfigurationManager, turnTokenGenerator, config.getTestDevices(),
-            transitionalRecaptchaClient, gcmSender, apnSender, backupCredentialsGenerator,
+            enterpriseRecaptchaClient, gcmSender, apnSender, backupCredentialsGenerator,
             verifyExperimentEnrollmentManager));
     environment.jersey().register(new KeysController(rateLimiters, keysDynamoDb, accountsManager, preKeyRateLimiter, rateLimitChallengeManager));
 

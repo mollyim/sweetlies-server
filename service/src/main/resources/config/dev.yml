@@ -186,9 +186,6 @@ voiceVerification:
   locales:
     - en
 
-recaptcha:
-  secret: test
-
 recaptchaV2:
   siteKey: test
   scoreFloor: 1.0

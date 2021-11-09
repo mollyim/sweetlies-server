@@ -33,7 +33,6 @@ import org.whispersystems.textsecuregcm.configuration.MonitoredS3ObjectConfigura
 import org.whispersystems.textsecuregcm.configuration.PaymentsServiceConfiguration;
 import org.whispersystems.textsecuregcm.configuration.PushConfiguration;
 import org.whispersystems.textsecuregcm.configuration.RateLimitsConfiguration;
-import org.whispersystems.textsecuregcm.configuration.RecaptchaConfiguration;
 import org.whispersystems.textsecuregcm.configuration.RecaptchaV2Configuration;
 import org.whispersystems.textsecuregcm.configuration.RedisClusterConfiguration;
 import org.whispersystems.textsecuregcm.configuration.RedisConfiguration;
@@ -235,11 +234,6 @@ public class WhisperServerConfiguration extends Configuration {
   @Valid
   @NotNull
   @JsonProperty
-  private RecaptchaConfiguration recaptcha;
-
-  @Valid
-  @NotNull
-  @JsonProperty
   private RecaptchaV2Configuration recaptchaV2;
 
   @Valid
@@ -291,10 +285,6 @@ public class WhisperServerConfiguration extends Configuration {
 
   public DynamoDbClientConfiguration getDynamoDbClientConfiguration() {
     return dynamoDbClientConfiguration;
-  }
-
-  public RecaptchaConfiguration getRecaptchaConfiguration() {
-    return recaptcha;
   }
 
   public RecaptchaV2Configuration getRecaptchaV2Configuration() {
