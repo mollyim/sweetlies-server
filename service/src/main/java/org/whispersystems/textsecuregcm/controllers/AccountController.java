@@ -224,7 +224,7 @@ public class AccountController {
         abusiveHostRules.setBlockedHost(sourceHost, "Auto-Block");
       }
 
-      return Response.status(402).build();
+//       return Response.status(402).build();
     }
 
     try {
