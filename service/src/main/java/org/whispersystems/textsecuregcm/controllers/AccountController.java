@@ -255,57 +255,57 @@ public class AccountController {
 
     pendingAccounts.store(number, storedVerificationCode);
 
-    final List<Locale.LanguageRange> languageRanges;
-
-    try {
-      languageRanges = acceptLanguage.map(Locale.LanguageRange::parse).orElse(Collections.emptyList());
-    } catch (final IllegalArgumentException e) {
-      return Response.status(400).build();
-    }
-
-    final boolean enrolledInVerifyExperiment = verifyExperimentEnrollmentManager.isEnrolled(client, number, languageRanges, transport);
-    final CompletableFuture<Optional<String>> sendVerificationWithTwilioVerifyFuture;
-
-    if (testDevices.containsKey(number)) {
-      // noop
-      sendVerificationWithTwilioVerifyFuture = CompletableFuture.completedFuture(Optional.empty());
-    } else if (transport.equals("sms")) {
-
-      if (enrolledInVerifyExperiment) {
-        sendVerificationWithTwilioVerifyFuture = smsSender.deliverSmsVerificationWithTwilioVerify(number, client, verificationCode.getVerificationCode(), languageRanges);
-      } else {
-        smsSender.deliverSmsVerification(number, client, verificationCode.getVerificationCodeDisplay());
-        sendVerificationWithTwilioVerifyFuture = CompletableFuture.completedFuture(Optional.empty());
-      }
-    } else if (transport.equals("voice")) {
-
-      if (enrolledInVerifyExperiment) {
-        sendVerificationWithTwilioVerifyFuture = smsSender.deliverVoxVerificationWithTwilioVerify(number, verificationCode.getVerificationCode(), languageRanges);
-      } else {
-        smsSender.deliverVoxVerification(number, verificationCode.getVerificationCode(), languageRanges);
-        sendVerificationWithTwilioVerifyFuture = CompletableFuture.completedFuture(Optional.empty());
-      }
-
-    } else {
-      sendVerificationWithTwilioVerifyFuture = CompletableFuture.completedFuture(Optional.empty());
-    }
-
-    sendVerificationWithTwilioVerifyFuture.whenComplete((maybeVerificationSid, throwable) -> {
-      if (throwable != null) {
-        Metrics.counter(TWILIO_VERIFY_ERROR_COUNTER_NAME).increment();
-
-        logger.warn("Error with Twilio Verify", throwable);
-        return;
-      }
-      maybeVerificationSid.ifPresent(twilioVerificationSid -> {
-        StoredVerificationCode storedVerificationCodeWithVerificationSid = new StoredVerificationCode(
-            storedVerificationCode.getCode(),
-            storedVerificationCode.getTimestamp(),
-            storedVerificationCode.getPushCode(),
-            twilioVerificationSid);
-        pendingAccounts.store(number, storedVerificationCodeWithVerificationSid);
-      });
-    });
+//    final List<Locale.LanguageRange> languageRanges;
+//
+//    try {
+//      languageRanges = acceptLanguage.map(Locale.LanguageRange::parse).orElse(Collections.emptyList());
+//    } catch (final IllegalArgumentException e) {
+//      return Response.status(400).build();
+//    }
+//
+//    final boolean enrolledInVerifyExperiment = verifyExperimentEnrollmentManager.isEnrolled(client, number, languageRanges, transport);
+//    final CompletableFuture<Optional<String>> sendVerificationWithTwilioVerifyFuture;
+//
+//    if (testDevices.containsKey(number)) {
+//      // noop
+//      sendVerificationWithTwilioVerifyFuture = CompletableFuture.completedFuture(Optional.empty());
+//    } else if (transport.equals("sms")) {
+//
+//      if (enrolledInVerifyExperiment) {
+//        sendVerificationWithTwilioVerifyFuture = smsSender.deliverSmsVerificationWithTwilioVerify(number, client, verificationCode.getVerificationCode(), languageRanges);
+//      } else {
+//        smsSender.deliverSmsVerification(number, client, verificationCode.getVerificationCodeDisplay());
+//        sendVerificationWithTwilioVerifyFuture = CompletableFuture.completedFuture(Optional.empty());
+//      }
+//    } else if (transport.equals("voice")) {
+//
+//      if (enrolledInVerifyExperiment) {
+//        sendVerificationWithTwilioVerifyFuture = smsSender.deliverVoxVerificationWithTwilioVerify(number, verificationCode.getVerificationCode(), languageRanges);
+//      } else {
+//        smsSender.deliverVoxVerification(number, verificationCode.getVerificationCode(), languageRanges);
+//        sendVerificationWithTwilioVerifyFuture = CompletableFuture.completedFuture(Optional.empty());
+//      }
+//
+//    } else {
+//      sendVerificationWithTwilioVerifyFuture = CompletableFuture.completedFuture(Optional.empty());
+//    }
+//
+//    sendVerificationWithTwilioVerifyFuture.whenComplete((maybeVerificationSid, throwable) -> {
+//      if (throwable != null) {
+//        Metrics.counter(TWILIO_VERIFY_ERROR_COUNTER_NAME).increment();
+//
+//        logger.warn("Error with Twilio Verify", throwable);
+//        return;
+//      }
+//      maybeVerificationSid.ifPresent(twilioVerificationSid -> {
+//        StoredVerificationCode storedVerificationCodeWithVerificationSid = new StoredVerificationCode(
+//            storedVerificationCode.getCode(),
+//            storedVerificationCode.getTimestamp(),
+//            storedVerificationCode.getPushCode(),
+//            twilioVerificationSid);
+//        pendingAccounts.store(number, storedVerificationCodeWithVerificationSid);
+//      });
+//    });
 
     // TODO Remove this meter when external dependencies have been resolved
     metricRegistry.meter(name(AccountController.class, "create", Util.getCountryCode(number))).mark();
@@ -315,7 +315,7 @@ public class AccountController {
       tags.add(Tag.of(COUNTRY_CODE_TAG_NAME, Util.getCountryCode(number)));
       tags.add(Tag.of(VERFICATION_TRANSPORT_TAG_NAME, transport));
       tags.add(UserAgentTagUtil.getPlatformTag(userAgent));
-      tags.add(Tag.of(VERIFY_EXPERIMENT_TAG_NAME, String.valueOf(enrolledInVerifyExperiment)));
+//      tags.add(Tag.of(VERIFY_EXPERIMENT_TAG_NAME, String.valueOf(enrolledInVerifyExperiment)));
 
       Metrics.counter(ACCOUNT_CREATE_COUNTER_NAME, tags).increment();
     }
@@ -347,7 +347,7 @@ public class AccountController {
     Optional<StoredVerificationCode> storedVerificationCode = pendingAccounts.getCodeForNumber(number);
 
     if (storedVerificationCode.isEmpty() || !storedVerificationCode.get().isValid(verificationCode)) {
-      throw new WebApplicationException(Response.status(403).build());
+//      throw new WebApplicationException(Response.status(403).build());
     }
 
     storedVerificationCode.flatMap(StoredVerificationCode::getTwilioVerificationSid)
