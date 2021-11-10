@@ -1,0 +1,34 @@
+plugins {
+    id 'application'
+    id 'com.google.protobuf'
+    id 'com.google.cloud.tools.jib'
+}
+
+application {
+    getMainClass().set 'org.signal.storageservice.StorageService'
+}
+
+dependencies {
+    implementation "io.dropwizard:dropwizard-core:${dropwizardVersion}"
+    implementation "io.dropwizard:dropwizard-auth:${dropwizardVersion}"
+    implementation "com.google.cloud:google-cloud-bigtable:${bitableVersion}"
+    implementation "org.syslog4j:syslog4j:${syslog4jVersion}"
+    implementation "org.signal:zkgroup-java:${zkgroupVersion}"
+    implementation "net.logstash.logback:logstash-logback-encoder:${logstashLogbackVersion}"
+    implementation "org.coursera:dropwizard-metrics-datadog:${dropwizardMetricsDatadogVersion}"
+    runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${jaxbVersion}"
+    testImplementation "io.dropwizard:dropwizard-testing:${dropwizardVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "com.google.cloud:google-cloud-bigtable-emulator:${bigtableEmulatorVersion}"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitJupiterVersion}"
+}
+
+jib {
+    from {
+        image = 'eclipse-temurin:11-jre@sha256:fec2ed05a90d99ad0c8af17438d0db38765a278e0190e8af82c7c7f7a5c84ce2'
+    }
+    to {
+        image = 'sweetlies-storage-service:latest'
+    }
+}

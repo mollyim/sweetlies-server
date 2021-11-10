@@ -4,5 +4,6 @@ include(':websocket-resources')
 include(':redis-dispatch')
 include(':service')
 include(':gcm-sender-async')
+include(':storage-service')
 
 project(':service').name = 'whisper-service'
