@@ -23,6 +23,9 @@ import io.dropwizard.auth.PolymorphicAuthDynamicFeature;
 import io.dropwizard.auth.PolymorphicAuthValueFactoryProvider;
 import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
 import io.dropwizard.auth.basic.BasicCredentials;
+import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
+import io.dropwizard.configuration.ResourceConfigurationSourceProvider;
+import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import java.time.Clock;
@@ -59,7 +62,13 @@ import org.signal.zkgroup.auth.ServerZkAuthOperations;
 public class StorageService extends Application<StorageServiceConfiguration> {
 
   @Override
-  public void initialize(Bootstrap<StorageServiceConfiguration> bootstrap) { }
+  public void initialize(Bootstrap<StorageServiceConfiguration> bootstrap) {
+    bootstrap.setConfigurationSourceProvider(
+        new SubstitutingSourceProvider(
+            new ResourceConfigurationSourceProvider(),
+            new EnvironmentVariableSubstitutor(false, true))
+    );
+  }
 
   @Override
   public void run(StorageServiceConfiguration config, Environment environment) throws Exception {
