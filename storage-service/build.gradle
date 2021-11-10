@@ -11,6 +11,7 @@ application {
 dependencies {
     implementation "io.dropwizard:dropwizard-core:${dropwizardVersion}"
     implementation "io.dropwizard:dropwizard-auth:${dropwizardVersion}"
+    implementation "com.google.protobuf:protobuf-java:${protobufVersion}"
     implementation "com.google.cloud:google-cloud-bigtable:${bitableVersion}"
     implementation "org.syslog4j:syslog4j:${syslog4jVersion}"
     implementation "org.signal:zkgroup-java:${zkgroupVersion}"
@@ -31,4 +32,16 @@ jib {
     to {
         image = 'sweetlies-storage-service:latest'
     }
+}
+
+task runServer(type: JavaExec) {
+    group = 'Application'
+    classpath = sourceSets.main.runtimeClasspath
+    getMainClass().set application.getMainClass()
+
+    if (args.isEmpty()) {
+        args(['server', 'config/dev.yml'])
+    }
+
+    environment(rootProject.devProvisioningEnvironment())
 }

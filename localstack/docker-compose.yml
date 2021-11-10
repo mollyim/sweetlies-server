@@ -61,8 +61,16 @@ services:
       - "./envoy/localhost.pem:/etc/envoy/localhost.pem:ro"
       - "./envoy/localhost.key:/etc/envoy/localhost.key:ro"
 
+  bigtable:
+    image: fullstorydev/cbtemulator:v0.1.0
+    ports:
+      - "8086:9000"
+    volumes:
+      - "dev-bigtable-data:/data"
+
 volumes:
   dev-accountdb-data:
   dev-abusedb-data:
   dev-redis-data:
   dev-localstack-data:
+  dev-bigtable-data:

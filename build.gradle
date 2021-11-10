@@ -85,6 +85,17 @@ subprojects {
     }
 }
 
+def devProvisioningEnvironment() {
+    return [
+            GOOGLE_APPLICATION_CREDENTIALS: "${projectDir}/localstack/gcp/service-account.json",
+            BIGTABLE_EMULATOR_HOST        : "localhost:8086"
+    ]
+}
+
+terraform {
+    environment devProvisioningEnvironment()
+}
+
 terraformSourceSets {
     dev {
         srcDir = 'terraform'

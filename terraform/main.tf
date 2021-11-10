@@ -12,6 +12,11 @@ provider "aws" {
   }
 }
 
+provider "google" {
+  project = "${var.app}-${var.environment}"
+  region  = var.gcp_region
+}
+
 resource "aws_dynamodb_table" "messages" {
   name         = "Messages"
   hash_key     = "H"
@@ -185,4 +190,52 @@ resource "aws_dynamodb_table" "report_messages" {
   }
 
   tags = {}
+}
+
+resource "google_bigtable_instance" "storage" {
+  count = 0
+
+  name = "storage"
+
+  cluster {
+    cluster_id   = "storage-cluster"
+    zone         = var.gcp_zone_a
+    num_nodes    = 1
+  }
+}
+
+resource "google_bigtable_table" "contacts" {
+  name          = "contacts"
+  instance_name = "storage"
+
+  column_family { # StorageItemsTable.FAMILY
+    family = "c"
+  }
+}
+
+resource "google_bigtable_table" "contact_manifests" {
+  name          = "manifest"
+  instance_name = "storage"
+
+  column_family { # StorageManifestsTable.FAMILY
+    family = "m"
+  }
+}
+
+resource "google_bigtable_table" "groups" {
+  name          = "groups"
+  instance_name = "storage"
+
+  column_family { # GroupsTable.FAMILY
+    family = "g"
+  }
+}
+
+resource "google_bigtable_table" "group_logs" {
+  name          = "group-logs"
+  instance_name = "storage"
+
+  column_family { # GroupLogTable.FAMILY
+    family = "l"
+  }
 }

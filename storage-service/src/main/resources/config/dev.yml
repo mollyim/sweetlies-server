@@ -1,0 +1,37 @@
+server:
+  applicationConnectors:
+    - type: http
+      bindHost: ${HTTP_HOST:-127.0.0.1}
+      port: ${HTTP_PORT:-10080}
+  adminConnectors:
+    - type: http
+      bindHost: ${ADMIN_HOST:-127.0.0.1}
+      port: ${ADMIN_HTTP_PORT:-10081}
+
+bigtable:
+  projectId: sweetlies-dev
+  instanceId: storage
+  clusterId: storage-cluster
+  contactsTableId: contacts
+  contactManifestsTableId: contact-manifests
+  groupsTableId: groups
+  groupLogsTableId: group-logs
+
+authentication:
+  key: c597c0cc3169b84b4420d206bfdb14e2
+
+zkConfig:
+  serverPublic: ACL4V8rh4l4xF+c0dcRg5JN4G8reoEExtEdVvbU10qYY0sPn+LPGavcjNo7FbXNhpedld6n5GrmA5rPdYXNIVAKQ2ILKRGcmox4/KTmuuW32iOBznCAOuJ/rTafroBOCFUQYXA1A8wz52aYM4iqi+YwZuWs3lbolU2hAuDFLkoBDRNwftdNT2sUD1jRy+gpBimAXIBTm28O04PUBZx6KAUVyjxemiB1emO2fA6KL7/30Pna9YQe//mu5XvLElAyOR2g4qjifCZQdOfXc7BOo6CLRLPS71GkZvYhiZKxm6F8I
+  serverSecret: ACKqqtek/wIFpHPlMFRsXcfwXAI4XHOaJzQ5/OZC57kCd4KT1aUJGQHd43NKY2UYF7xiqhwQ14ol+2DoMTfDXAkS3gupCAyLArJVUD2WF/HJiV8RuxWSFu9l+Sd7r3XPXWDSXSAW2wH/JllRnCneWQfCcMTCc5wktnmmmRHPjegCxo6EAFNfgMtmHL33VS9d6XhfsxnUFd244Hoi4TZrvw5kJjOcUR+wTF1eEvKToH8G88WFHDjjcj+nGPaCmjYiBi5yjfMPLcNelcMuhPMd7nbYkfgjBGMX0UCslP/s2DsNdG7LB7XQc7289Qlc+5IsAGAaF59ZzT7UXD64w3H65AAsKlo1EIkrVdmeB2QhxrQAR1QPDMdz2GmjfOnxn5fIBiL4V8rh4l4xF+c0dcRg5JN4G8reoEExtEdVvbU10qYY0sPn+LPGavcjNo7FbXNhpedld6n5GrmA5rPdYXNIVAIr4A+uGl6MsGgZBnk6OVRciby89VENQu/beBSSU8oYAL2m6QVZ9e/ejCF052f2+pnYOlvsyoI4Sr8ByLJRp7cMkjlHsenVAQraMJ/Quyb3RaSWWHMG8GxYz7IKk/JqAUz2y60ZYgZvGA/oVCUMeut3w8X0kBMeuu0vSJCLMYQDBPVIxrL+mmGOvqFfELbLTo5ROlVks1tJ0ZiX/IJqAWAGrXqs4u/dNEFZeaIOnU2uBctJqclc2io5H7u1VcG5ag6iDzVAmgFImEpp/SV9VLanuM3vDtBrYsP0ljq1BOlOCpuOevcHYWVs/HcfMbHr/GXbrc2BjolMKLwFk6da43MMIvlPiaD67KeBBMJgaz/JylK5S+4Dr2wOlnOsI47d8w2Q2ILKRGcmox4/KTmuuW32iOBznCAOuJ/rTafroBOCFUQYXA1A8wz52aYM4iqi+YwZuWs3lbolU2hAuDFLkoBD5MJT/K1YLrmmBbyoTjRdXLpv4YZXBRKCTZLyhM8iOwNE3B+101PaxQPWNHL6CkGKYBcgFObbw7Tg9QFnHooBRZ4P9UZxpXzH9Sa1ugyf88FwtVgs6HC46rCiSmxHwh8O139WnsUpl4xXu4X9r56HpXlqXgKvSdtYhFftfow9qQGuvZCVnA/WSZmQMBfGfEDEe+J+kBSJ2XD2uib9EnUWZG1QATEH4vpQrSmwiSOp3ysLgT6zX/nDBOW3ud0sivQOFF39ephY9qylAv9Dr5jQf26JWo06iFNA5Tm0wjS+kw+zR5y2OzZL+9i/pz6YNZsL42a4vat2hySrrFuWPY1DBtLY9G5n5kpT4DuTVjCRnW4gPN98pvGhMSOdeylOxAgHj6DYlNOtDdwiDBpkl+4MlMXzNC5nKUAfpPMmD0fPVw9YBczEfFkBn6dBFxmstesl1y47jzK8TN17QqzVnmQpCXKPF6aIHV6Y7Z8Doovv/fQ+dr1hB7/+a7le8sSUDI5HaDiqOJ8JlB059dzsE6joItEs9LvUaRm9iGJkrGboXwg
+
+cdn:
+  accessKey: test
+  accessSecret: test
+  bucket: CDN
+  region: ${AWS_REGION}
+
+group:
+  maxGroupSize: 1001
+  maxGroupTitleLengthBytes: 1024
+  maxGroupDescriptionLengthBytes: 8192
+  externalServiceSecret: 28cf62bcb81a766de2433e93d2d25956
