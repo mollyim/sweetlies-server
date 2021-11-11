@@ -1,12 +1,18 @@
+locals {
+  aws_endpoint_override = (var.aws_endpoint != null)
+}
+
 provider "aws" {
   region     = var.aws_deploy_region
   access_key = var.aws_access_key
   secret_key = var.aws_secret_key
 
-  skip_metadata_api_check = (var.aws_endpoint != null)
+  skip_metadata_api_check = local.aws_endpoint_override
+  s3_force_path_style     = local.aws_endpoint_override
 
   endpoints {
     dynamodb = var.aws_endpoint
+    iam      = var.aws_endpoint
     s3       = var.aws_endpoint
     sts      = var.aws_endpoint
   }
@@ -238,4 +244,42 @@ resource "google_bigtable_table" "group_logs" {
   column_family { # GroupLogTable.FAMILY
     family = "l"
   }
+}
+
+resource "aws_iam_user" "attachment_controller" {
+  name = "attachment-controller"
+}
+
+resource "aws_iam_access_key" "attachment_controller" {
+  user = aws_iam_user.attachment_controller.name
+}
+
+resource "aws_s3_bucket" "attachments" {
+  bucket = "attachments"
+
+  versioning {
+    enabled    = false
+    mfa_delete = false
+  }
+}
+
+resource "aws_s3_bucket_policy" "attachments_policy" {
+  bucket = aws_s3_bucket.attachments.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id = "attachments-policy"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = "${aws_iam_user.attachment_controller.name}"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject"
+        ]
+        Resource = [
+          "${aws_s3_bucket.attachments.arn}/*"
+        ]
+      },
+    ]
+  })
 }

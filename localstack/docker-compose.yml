@@ -46,7 +46,7 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - "SERVICES=dynamodb,s3,sts"
+      - "SERVICES=dynamodb,iam,s3,sts"
       - "DATA_DIR=/tmp/localstack/data"
     volumes:
       - "dev-localstack-data:/tmp/localstack"
@@ -68,9 +68,17 @@ services:
     volumes:
       - "dev-bigtable-data:/data"
 
+  gcloud-storage:
+    image: fullstorydev/gcsemulator:v0.1.0
+    ports:
+      - "8087:9000"
+    volumes:
+      - "dev-gcs-data:/data"
+
 volumes:
   dev-accountdb-data:
   dev-abusedb-data:
   dev-redis-data:
   dev-localstack-data:
   dev-bigtable-data:
+  dev-gcs-data:
