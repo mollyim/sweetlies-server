@@ -2,6 +2,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.17' apply false
     id 'com.google.cloud.tools.jib' version '3.1.4' apply false
     id 'org.ysb33r.terraform' version '0.12.2'
+    id "com.avast.gradle.docker-compose" version "0.14.9"
 }
 
 allprojects {
@@ -90,6 +91,18 @@ def devProvisioningEnvironment() {
             GOOGLE_APPLICATION_CREDENTIALS: "${projectDir}/localstack/gcp/service-account.json",
             BIGTABLE_EMULATOR_HOST        : "localhost:8086"
     ]
+}
+
+dockerCompose {
+    localStack {
+        useComposeFiles = [ 'localstack/docker-compose.yml' ]
+        projectName = null
+        removeVolumes = project.properties['removeVolumes']?.toBoolean() ?: false
+    }
+}
+
+tasks.matching { it.name.startsWith('tfDev') }.all {
+    dependsOn localStackComposeUp
 }
 
 terraform {
