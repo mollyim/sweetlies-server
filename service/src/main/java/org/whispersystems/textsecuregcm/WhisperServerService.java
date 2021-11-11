@@ -280,7 +280,9 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
             }
           });
 
-      Metrics.addRegistry(datadogMeterRegistry);
+      if (!"dev".equals(config.getDatadogConfiguration().getEnvironment())) {
+        Metrics.addRegistry(datadogMeterRegistry);
+      }
     }
 
     environment.getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

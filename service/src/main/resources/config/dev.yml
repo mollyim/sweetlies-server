@@ -174,7 +174,7 @@ cdn:
 
 datadog:
   apiKey: test
-  environment: test
+  environment: dev
 
 unidentifiedDelivery:
   certificate: CiUIARIhBaXYSgI1RJwALheDXpRKOhaJR8pR7BFKiJeWIxcWiycdEkCcrSomdnUf40mP8tU1tG0ZGRpjlaJHkGOS+FxBruC6MMcd27YgfJLKMCmh6A29REwG5BYhN3bFjmyh1sT8GrsL
