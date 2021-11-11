@@ -8,11 +8,6 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat;
 import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.temporal.ChronoField;
@@ -21,7 +16,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Locale.LanguageRange;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -32,18 +26,6 @@ public class Util {
   private static final Pattern COUNTRY_CODE_PATTERN = Pattern.compile("^\\+([17]|2[07]|3[0123469]|4[013456789]|5[12345678]|6[0123456]|8[1246]|9[0123458]|\\d{3})");
 
   private static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
-
-  public static byte[] getContactToken(String number) {
-    try {
-      MessageDigest digest    = MessageDigest.getInstance("SHA1");
-      byte[]        result    = digest.digest(number.getBytes());
-      byte[]        truncated = Util.truncate(result, 10);
-
-      return truncated;
-    } catch (NoSuchAlgorithmException e) {
-      throw new AssertionError(e);
-    }
-  }
 
   /**
    * Checks that the given number is a valid, E164-normalized phone number.
@@ -85,36 +67,8 @@ public class Util {
     return number.substring(0, 1 + countryCode.length() + prefixLength);
   }
 
-  public static String encodeFormParams(Map<String, String> params) {
-    try {
-      StringBuffer buffer = new StringBuffer();
-
-      for (String key : params.keySet()) {
-        buffer.append(String.format("%s=%s",
-                                    URLEncoder.encode(key, "UTF-8"),
-                                    URLEncoder.encode(params.get(key), "UTF-8")));
-        buffer.append("&");
-      }
-
-      buffer.deleteCharAt(buffer.length()-1);
-      return buffer.toString();
-    } catch (UnsupportedEncodingException e) {
-      throw new AssertionError(e);
-    }
-  }
-
   public static boolean isEmpty(String param) {
     return param == null || param.length() == 0;
-  }
-
-  public static byte[] combine(byte[] one, byte[] two, byte[] three, byte[] four) {
-    byte[] combined = new byte[one.length + two.length + three.length + four.length];
-    System.arraycopy(one, 0, combined, 0, one.length);
-    System.arraycopy(two, 0, combined, one.length, two.length);
-    System.arraycopy(three, 0, combined, one.length + two.length, three.length);
-    System.arraycopy(four, 0, combined, one.length + two.length + three.length, four.length);
-
-    return combined;
   }
 
   public static byte[] truncate(byte[] element, int length) {
@@ -122,43 +76,6 @@ public class Util {
     System.arraycopy(element, 0, result, 0, result.length);
 
     return result;
-  }
-
-
-  public static byte[][] split(byte[] input, int firstLength, int secondLength) {
-    byte[][] parts = new byte[2][];
-
-    parts[0] = new byte[firstLength];
-    System.arraycopy(input, 0, parts[0], 0, firstLength);
-
-    parts[1] = new byte[secondLength];
-    System.arraycopy(input, firstLength, parts[1], 0, secondLength);
-
-    return parts;
-  }
-
-  public static byte[][] split(byte[] input, int firstLength, int secondLength, int thirdLength, int fourthLength) {
-    byte[][] parts = new byte[4][];
-
-    parts[0] = new byte[firstLength];
-    System.arraycopy(input, 0, parts[0], 0, firstLength);
-
-    parts[1] = new byte[secondLength];
-    System.arraycopy(input, firstLength, parts[1], 0, secondLength);
-
-    parts[2] = new byte[thirdLength];
-    System.arraycopy(input, firstLength + secondLength, parts[2], 0, thirdLength);
-
-    parts[3] = new byte[fourthLength];
-    System.arraycopy(input, firstLength + secondLength + thirdLength, parts[3], 0, fourthLength);
-
-    return parts;
-  }
-
-  public static byte[] generateSecretBytes(int size) {
-    byte[] data = new byte[size];
-    new SecureRandom().nextBytes(data);
-    return data;
   }
 
   public static int toIntExact(long value) {
@@ -196,10 +113,6 @@ public class Util {
 
   public static int hashCode(Object... objects) {
     return Arrays.hashCode(objects);
-  }
-
-  public static boolean isEquals(Object first, Object second) {
-    return (first == null && second == null) || (first == second) || (first != null && first.equals(second));
   }
 
   public static long todayInMillis() {
