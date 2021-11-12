@@ -67,7 +67,6 @@ public class ReportMessageManager {
       });
 
       Counter.builder(REPORT_COUNTER_NAME)
-          .tag("countryCode", Util.getCountryCode(sourceNumber))
           .register(meterRegistry)
           .increment();
     }

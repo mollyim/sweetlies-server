@@ -61,9 +61,6 @@ public class KeysController {
   private static final String PREKEY_REQUEST_COUNTER_NAME = name(KeysController.class, "preKeyGet");
   private static final String RATE_LIMITED_GET_PREKEYS_COUNTER_NAME = name(KeysController.class, "rateLimitedGetPreKeys");
 
-  private static final String SOURCE_COUNTRY_TAG_NAME = "sourceCountry";
-  private static final String INTERNATIONAL_TAG_NAME = "international";
-
   public KeysController(RateLimiters rateLimiters, KeysDynamoDb keysDynamoDb, AccountsManager accounts,
       PreKeyRateLimiter preKeyRateLimiter,
       RateLimitChallengeManager rateLimitChallengeManager) {
@@ -135,13 +132,7 @@ public class KeysController {
     assert (target.isPresent());
 
     {
-      final String sourceCountryCode = account.map(a -> Util.getCountryCode(a.getNumber())).orElse("0");
-      final String targetCountryCode = target.map(a -> Util.getCountryCode(a.getNumber())).orElseThrow();
-
-      Metrics.counter(PREKEY_REQUEST_COUNTER_NAME, Tags.of(
-          SOURCE_COUNTRY_TAG_NAME, sourceCountryCode,
-          INTERNATIONAL_TAG_NAME, String.valueOf(!sourceCountryCode.equals(targetCountryCode))
-      )).increment();
+      Metrics.counter(PREKEY_REQUEST_COUNTER_NAME).increment();
     }
 
     if (account.isPresent()) {
@@ -156,7 +147,6 @@ public class KeysController {
         final boolean legacyClient = rateLimitChallengeManager.isClientBelowMinimumVersion(userAgent);
 
         Metrics.counter(RATE_LIMITED_GET_PREKEYS_COUNTER_NAME,
-                SOURCE_COUNTRY_TAG_NAME, Util.getCountryCode(account.get().getNumber()),
                 "legacyClient", String.valueOf(legacyClient))
             .increment();
 

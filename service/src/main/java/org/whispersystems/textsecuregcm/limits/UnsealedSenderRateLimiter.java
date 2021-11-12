@@ -105,8 +105,7 @@ public class UnsealedSenderRateLimiter {
       connection.sync().incrby(key, rateLimitsConfiguration.getUnsealedSenderPermitIncrement());
     });
 
-    Metrics.counter(RATE_LIMIT_RESET_COUNTER_NAME,
-        "countryCode", Util.getCountryCode(account.getNumber())).increment();
+    Metrics.counter(RATE_LIMIT_RESET_COUNTER_NAME).increment();
   }
 
   private static String getMaxCardinalityKey(final Account account) {

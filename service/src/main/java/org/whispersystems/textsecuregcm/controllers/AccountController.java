@@ -108,7 +108,6 @@ public class AccountController {
 
   private static final String CHALLENGE_PRESENT_TAG_NAME = "present";
   private static final String CHALLENGE_MATCH_TAG_NAME = "matches";
-  private static final String COUNTRY_CODE_TAG_NAME = "countryCode";
   private static final String VERFICATION_TRANSPORT_TAG_NAME = "transport";
 
   private static final String VERIFY_EXPERIMENT_TAG_NAME = "twilioVerify";
@@ -308,11 +307,10 @@ public class AccountController {
 //    });
 
     // TODO Remove this meter when external dependencies have been resolved
-    metricRegistry.meter(name(AccountController.class, "create", Util.getCountryCode(number))).mark();
+    metricRegistry.meter(name(AccountController.class, "create")).mark();
 
     {
       final List<Tag> tags = new ArrayList<>();
-      tags.add(Tag.of(COUNTRY_CODE_TAG_NAME, Util.getCountryCode(number)));
       tags.add(Tag.of(VERFICATION_TRANSPORT_TAG_NAME, transport));
       tags.add(UserAgentTagUtil.getPlatformTag(userAgent));
 //      tags.add(Tag.of(VERIFY_EXPERIMENT_TAG_NAME, String.valueOf(enrolledInVerifyExperiment)));
@@ -368,10 +366,9 @@ public class AccountController {
     Account account = accounts.create(number, password, signalAgent, accountAttributes);
 
     {
-      metricRegistry.meter(name(AccountController.class, "verify", Util.getCountryCode(number))).mark();
+      metricRegistry.meter(name(AccountController.class, "verify")).mark();
 
       final List<Tag> tags = new ArrayList<>();
-      tags.add(Tag.of(COUNTRY_CODE_TAG_NAME, Util.getCountryCode(number)));
       tags.add(UserAgentTagUtil.getPlatformTag(userAgent));
       tags.add(Tag.of(VERIFY_EXPERIMENT_TAG_NAME, String.valueOf(storedVerificationCode.get().getTwilioVerificationSid().isPresent())));
 
@@ -667,10 +664,8 @@ public class AccountController {
       }
     }
 
-    final String countryCode = Util.getCountryCode(number);
     {
       final List<Tag> tags = new ArrayList<>();
-      tags.add(Tag.of(COUNTRY_CODE_TAG_NAME, countryCode));
 
       try {
         if (pushChallenge.isPresent()) {
@@ -718,19 +713,6 @@ public class AccountController {
       logger.info("Rate limit exceeded: {}, {}, {} ({})", transport, number, sourceHost, forwardedFor);
       rateLimitedHostMeter.mark();
       return new CaptchaRequirement(true, true);
-    }
-
-    try {
-      rateLimiters.getSmsVoicePrefixLimiter().validate(Util.getNumberPrefix(number));
-    } catch (RateLimitExceededException e) {
-      logger.info("Prefix rate limit exceeded: {}, {}, {} ({})", transport, number, sourceHost, forwardedFor);
-      rateLimitedPrefixMeter.mark();
-      return new CaptchaRequirement(true, true);
-    }
-
-    DynamicSignupCaptchaConfiguration signupCaptchaConfig = dynamicConfigurationManager.getConfiguration().getSignupCaptchaConfiguration();
-    if (signupCaptchaConfig.getCountryCodes().contains(countryCode)) {
-      return new CaptchaRequirement(true, false);
     }
 
     return new CaptchaRequirement(false, false);

@@ -73,7 +73,6 @@ public class PreKeyRateLimiter {
 
     rateLimiters.getDailyPreKeysLimiter().clear(account.getUuid());
 
-    Metrics.counter(RATE_LIMIT_RESET_COUNTER_NAME, "countryCode", Util.getCountryCode(account.getNumber()))
-        .increment();
+    Metrics.counter(RATE_LIMIT_RESET_COUNTER_NAME).increment();
   }
 }
