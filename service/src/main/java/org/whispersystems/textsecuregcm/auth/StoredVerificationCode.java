@@ -24,23 +24,17 @@ public class StoredVerificationCode {
   @JsonProperty
   private final String pushCode;
 
-  @JsonProperty
-  @Nullable
-  private final String twilioVerificationSid;
-
   public static final Duration EXPIRATION = Duration.ofMinutes(10);
 
   @JsonCreator
   public StoredVerificationCode(
       @JsonProperty("code") final String code,
       @JsonProperty("timestamp") final long timestamp,
-      @JsonProperty("pushCode") final String pushCode,
-      @JsonProperty("twilioVerificationSid") @Nullable final String twilioVerificationSid) {
+      @JsonProperty("pushCode") final String pushCode) {
 
     this.code = code;
     this.timestamp = timestamp;
     this.pushCode = pushCode;
-    this.twilioVerificationSid = twilioVerificationSid;
   }
 
   public String getCode() {
@@ -53,10 +47,6 @@ public class StoredVerificationCode {
 
   public String getPushCode() {
     return pushCode;
-  }
-
-  public Optional<String> getTwilioVerificationSid() {
-    return Optional.ofNullable(twilioVerificationSid);
   }
 
   public boolean isValid(String theirCodeString) {

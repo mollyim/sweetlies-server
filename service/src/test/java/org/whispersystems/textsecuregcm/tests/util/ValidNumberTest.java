@@ -7,65 +7,42 @@ package org.whispersystems.textsecuregcm.tests.util;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.whispersystems.textsecuregcm.util.ImpossiblePhoneNumberException;
-import org.whispersystems.textsecuregcm.util.NonNormalizedPhoneNumberException;
+import org.whispersystems.textsecuregcm.util.ImpossibleNikNumberException;
 import org.whispersystems.textsecuregcm.util.Util;
 
-import java.util.stream.Stream;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ValidNumberTest {
 
   @ParameterizedTest
   @ValueSource(strings = {
-      "+447700900111",
-      "+14151231234",
-      "+71234567890",
-      "+447535742222",
-      "+4915174108888",
-      "+298123456",
-      "+299123456",
-      "+376123456",
-      "+68512345",
-      "+689123456"})
-  void requireNormalizedNumber(final String number) {
-    assertDoesNotThrow(() -> Util.requireNormalizedNumber(number));
+      "+000123456789012",
+      "+000477009001111",
+      "+000671234567890"})
+  void requireNikNumber(final String number) {
+    assertDoesNotThrow(() -> Util.requireNikNumber(number));
   }
 
   @Test
-  void requireNormalizedNumberNull() {
-    assertThrows(ImpossiblePhoneNumberException.class, () -> Util.requireNormalizedNumber(null));
+  void requireNikNumberNullOrEmpty() {
+    assertThrows(ImpossibleNikNumberException.class, () -> Util.requireNikNumber(null));
+    assertThrows(ImpossibleNikNumberException.class, () -> Util.requireNikNumber(""));
   }
 
   @ParameterizedTest
   @ValueSource(strings = {
       "Definitely not a phone number at all",
       "+141512312341",
-      "+712345678901",
-      "+4475357422221",
-      "+491517410888811111",
-      "71234567890",
-      "001447535742222",
-      "+1415123123a"
+      "+000023456789012",
+      "+00012345678901b",
+      "000477009001111",
+      "+0004770090011119",
+      " +000477009001111",
+      "+001447535742222",
   })
-  void requireNormalizedNumberImpossibleNumber(final String number) {
-    assertThrows(ImpossiblePhoneNumberException.class, () -> Util.requireNormalizedNumber(number));
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "+4407700900111",
-      "+1 415 123 1234",
-      "+1 (415) 123-1234",
-      "+1 415)123-1234",
-      " +14151231234"})
-  void requireNormalizedNumberNonNormalized(final String number) {
-    assertThrows(NonNormalizedPhoneNumberException.class, () -> Util.requireNormalizedNumber(number));
+  void requireNikNumberImpossibleNumber(final String number) {
+    assertThrows(ImpossibleNikNumberException.class, () -> Util.requireNikNumber(number));
   }
 }

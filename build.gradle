@@ -34,7 +34,6 @@ subprojects {
         jaxbVersion = '2.3.1'
         jedisVersion = '2.9.0'
         lettuceVersion = '6.0.4.RELEASE'
-        libphonenumberVersion = '8.12.33'
         logstashLogbackVersion = '6.6'
         micrometerVersion = '1.5.3'
         mockitoVersion = '3.11.1'

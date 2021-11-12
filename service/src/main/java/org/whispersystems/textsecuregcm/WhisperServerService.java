@@ -83,7 +83,6 @@ import org.whispersystems.textsecuregcm.controllers.DeviceController;
 import org.whispersystems.textsecuregcm.controllers.KeepAliveController;
 import org.whispersystems.textsecuregcm.controllers.KeysController;
 import org.whispersystems.textsecuregcm.controllers.MessageController;
-import org.whispersystems.textsecuregcm.controllers.PaymentsController;
 import org.whispersystems.textsecuregcm.controllers.ProfileController;
 import org.whispersystems.textsecuregcm.controllers.ProvisioningController;
 import org.whispersystems.textsecuregcm.controllers.RemoteConfigController;
@@ -91,9 +90,6 @@ import org.whispersystems.textsecuregcm.controllers.SecureBackupController;
 import org.whispersystems.textsecuregcm.controllers.SecureStorageController;
 import org.whispersystems.textsecuregcm.controllers.StickerController;
 import org.whispersystems.textsecuregcm.controllers.VoiceVerificationController;
-import org.whispersystems.textsecuregcm.currency.CurrencyConversionManager;
-import org.whispersystems.textsecuregcm.currency.FixerClient;
-import org.whispersystems.textsecuregcm.currency.FtxClient;
 import org.whispersystems.textsecuregcm.experiment.ExperimentEnrollmentManager;
 import org.whispersystems.textsecuregcm.filters.ContentLengthFilter;
 import org.whispersystems.textsecuregcm.filters.RemoteDeprecationFilter;
@@ -108,9 +104,8 @@ import org.whispersystems.textsecuregcm.liquibase.CloseableLiquibase;
 import org.whispersystems.textsecuregcm.liquibase.NameableMigrationsBundle;
 import org.whispersystems.textsecuregcm.mappers.DeviceLimitExceededExceptionMapper;
 import org.whispersystems.textsecuregcm.mappers.IOExceptionMapper;
-import org.whispersystems.textsecuregcm.mappers.ImpossiblePhoneNumberExceptionMapper;
+import org.whispersystems.textsecuregcm.mappers.ImpossibleNikNumberExceptionMapper;
 import org.whispersystems.textsecuregcm.mappers.InvalidWebsocketAddressExceptionMapper;
-import org.whispersystems.textsecuregcm.mappers.NonNormalizedPhoneNumberExceptionMapper;
 import org.whispersystems.textsecuregcm.mappers.RateLimitChallengeExceptionMapper;
 import org.whispersystems.textsecuregcm.mappers.RateLimitExceededExceptionMapper;
 import org.whispersystems.textsecuregcm.mappers.RetryLaterExceptionMapper;
@@ -147,9 +142,6 @@ import org.whispersystems.textsecuregcm.s3.PolicySigner;
 import org.whispersystems.textsecuregcm.s3.PostPolicyGenerator;
 import org.whispersystems.textsecuregcm.securebackup.SecureBackupClient;
 import org.whispersystems.textsecuregcm.securestorage.SecureStorageClient;
-import org.whispersystems.textsecuregcm.sms.SmsSender;
-import org.whispersystems.textsecuregcm.sms.TwilioSmsSender;
-import org.whispersystems.textsecuregcm.sms.TwilioVerifyExperimentEnrollmentManager;
 import org.whispersystems.textsecuregcm.storage.AbusiveHostRules;
 import org.whispersystems.textsecuregcm.storage.AccountCleaner;
 import org.whispersystems.textsecuregcm.storage.AccountDatabaseCrawler;
@@ -415,9 +407,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
 
     ExperimentEnrollmentManager experimentEnrollmentManager = new ExperimentEnrollmentManager(dynamicConfigurationManager);
 
-    TwilioVerifyExperimentEnrollmentManager verifyExperimentEnrollmentManager = new TwilioVerifyExperimentEnrollmentManager(
-        config.getVoiceVerificationConfiguration(), experimentEnrollmentManager);
-
     ExternalServiceCredentialGenerator storageCredentialsGenerator   = new ExternalServiceCredentialGenerator(config.getSecureStorageServiceConfiguration().getUserAuthenticationTokenSharedSecret(), new byte[0], false);
     ExternalServiceCredentialGenerator backupCredentialsGenerator    = new ExternalServiceCredentialGenerator(config.getSecureBackupServiceConfiguration().getUserAuthenticationTokenSharedSecret(), new byte[0], false);
 
@@ -457,8 +446,6 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     PreKeyRateLimiter preKeyRateLimiter = new PreKeyRateLimiter(rateLimiters, dynamicConfigurationManager, rateLimitResetMetricsManager);
 
     ApnFallbackManager       apnFallbackManager = new ApnFallbackManager(pushSchedulerCluster, apnSender, accountsManager);
-    TwilioSmsSender          twilioSmsSender    = new TwilioSmsSender(config.getTwilioConfiguration(), dynamicConfigurationManager);
-    SmsSender                smsSender          = new SmsSender(twilioSmsSender);
     MessageSender            messageSender      = new MessageSender(apnFallbackManager, clientPresenceManager, messagesManager, gcmSender, apnSender, pushLatencyManager);
     ReceiptSender            receiptSender      = new ReceiptSender(accountsManager, messageSender);
     TurnTokenGenerator       turnTokenGenerator = new TurnTokenGenerator(config.getTurnConfiguration());
@@ -563,9 +550,8 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     // these should be common, but use @Auth DisabledPermittedAccount, which isn't supported yet on websocket
     environment.jersey().register(
         new AccountController(pendingAccountsManager, accountsManager, usernamesManager, abusiveHostRules, rateLimiters,
-            smsSender, dynamicConfigurationManager, turnTokenGenerator, config.getTestDevices(),
-            enterpriseRecaptchaClient, gcmSender, apnSender, backupCredentialsGenerator,
-            verifyExperimentEnrollmentManager));
+            dynamicConfigurationManager, turnTokenGenerator, config.getTestDevices(),
+            enterpriseRecaptchaClient, gcmSender, apnSender, backupCredentialsGenerator));
     environment.jersey().register(new KeysController(rateLimiters, keysDynamoDb, accountsManager, preKeyRateLimiter, rateLimitChallengeManager));
 
     final List<Object> commonControllers = Lists.newArrayList(
@@ -660,8 +646,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
         new DeviceLimitExceededExceptionMapper(),
         new RetryLaterExceptionMapper(),
         new ServerRejectedExceptionMapper(),
-        new ImpossiblePhoneNumberExceptionMapper(),
-        new NonNormalizedPhoneNumberExceptionMapper()
+        new ImpossibleNikNumberExceptionMapper()
     ).forEach(exceptionMapper -> {
       environment.jersey().register(exceptionMapper);
       webSocketEnvironment.jersey().register(exceptionMapper);

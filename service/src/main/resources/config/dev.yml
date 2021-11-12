@@ -11,22 +11,6 @@ server:
 dynamoDbClientConfiguration:
   region: ${AWS_REGION}
 
-twilio: # Twilio gateway configuration
-  accountId: test
-  accountToken: test
-  nanpaMessagingServiceSid: test
-  messagingServiceSid: test
-  verifyServiceSid: test
-  localDomain: test
-  defaultClientVerificationTexts:
-    ios: test
-    androidNg: test
-    android202001: test
-    android202103: test
-    generic: test
-  androidAppHash: test
-  verifyServiceFriendlyName: test
-
 push:
   queueSize: # Size of push pending queue
 

@@ -42,7 +42,6 @@ import org.whispersystems.textsecuregcm.configuration.SecureBackupServiceConfigu
 import org.whispersystems.textsecuregcm.configuration.SecureStorageServiceConfiguration;
 import org.whispersystems.textsecuregcm.configuration.TestDeviceConfiguration;
 import org.whispersystems.textsecuregcm.configuration.TurnConfiguration;
-import org.whispersystems.textsecuregcm.configuration.TwilioConfiguration;
 import org.whispersystems.textsecuregcm.configuration.UnidentifiedDeliveryConfiguration;
 import org.whispersystems.textsecuregcm.configuration.VoiceVerificationConfiguration;
 import org.whispersystems.textsecuregcm.configuration.ZkConfig;
@@ -55,11 +54,6 @@ public class WhisperServerConfiguration extends Configuration {
   @Valid
   @JsonProperty
   private DynamoDbClientConfiguration dynamoDbClientConfiguration;
-
-  @NotNull
-  @Valid
-  @JsonProperty
-  private TwilioConfiguration twilio;
 
   @NotNull
   @Valid
@@ -297,10 +291,6 @@ public class WhisperServerConfiguration extends Configuration {
 
   public WebSocketConfiguration getWebSocketConfiguration() {
     return webSocket;
-  }
-
-  public TwilioConfiguration getTwilioConfiguration() {
-    return twilio;
   }
 
   public PushConfiguration getPushConfiguration() {

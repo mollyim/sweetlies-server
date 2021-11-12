@@ -1,7 +1,6 @@
 package org.whispersystems.textsecuregcm.configuration.dynamic;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -38,10 +37,6 @@ public class DynamicConfiguration {
   private Set<String> featureFlags = Collections.emptySet();
 
   @JsonProperty
-  @Valid
-  private DynamicTwilioConfiguration twilio = new DynamicTwilioConfiguration();
-
-  @JsonProperty
   private DynamicSignupCaptchaConfiguration signupCaptcha = new DynamicSignupCaptchaConfiguration();
 
   @JsonProperty
@@ -76,15 +71,6 @@ public class DynamicConfiguration {
 
   public Set<String> getActiveFeatureFlags() {
     return featureFlags;
-  }
-
-  public DynamicTwilioConfiguration getTwilioConfiguration() {
-    return twilio;
-  }
-
-  @VisibleForTesting
-  public void setTwilioConfiguration(DynamicTwilioConfiguration twilioConfiguration) {
-    this.twilio = twilioConfiguration;
   }
 
   public DynamicSignupCaptchaConfiguration getSignupCaptchaConfiguration() {

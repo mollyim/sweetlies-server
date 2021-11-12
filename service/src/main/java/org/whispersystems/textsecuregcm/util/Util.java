@@ -4,10 +4,6 @@
  */
 package org.whispersystems.textsecuregcm.util;
 
-import com.google.i18n.phonenumbers.NumberParseException;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat;
-import com.google.i18n.phonenumbers.Phonenumber.PhoneNumber;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.temporal.ChronoField;
@@ -18,53 +14,24 @@ import java.util.Locale;
 import java.util.Locale.LanguageRange;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Util {
 
-  private static final Pattern COUNTRY_CODE_PATTERN = Pattern.compile("^\\+([17]|2[07]|3[0123469]|4[013456789]|5[12345678]|6[0123456]|8[1246]|9[0123458]|\\d{3})");
-
-  private static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
+  private static final Pattern VALID_NIKNUM_PATTERN = Pattern.compile("\\+0{3}[1-9][0-9]{11}");
 
   /**
-   * Checks that the given number is a valid, E164-normalized phone number.
+   * Checks that the given number is a valid, E164-normalized niknumber.
    *
    * @param number the number to check
    *
-   * @throws ImpossiblePhoneNumberException if the given number is not a valid phone number at all
-   * @throws NonNormalizedPhoneNumberException if the given number is a valid phone number, but isn't E164-normalized
+   * @throws ImpossibleNikNumberException if the given number is not a valid niknumber at all
    */
-  public static void requireNormalizedNumber(final String number) throws ImpossiblePhoneNumberException, NonNormalizedPhoneNumberException {
-    if (!PHONE_NUMBER_UTIL.isPossibleNumber(number, null)) {
-      throw new ImpossiblePhoneNumberException();
+  public static void requireNikNumber(final String number) throws ImpossibleNikNumberException {
+    if (number != null && VALID_NIKNUM_PATTERN.matcher(number).matches()) {
+      return;
     }
-
-    try {
-      final PhoneNumber phoneNumber = PHONE_NUMBER_UTIL.parse(number, null);
-      final String normalizedNumber = PHONE_NUMBER_UTIL.format(phoneNumber, PhoneNumberFormat.E164);
-
-      if (!number.equals(normalizedNumber)) {
-        throw new NonNormalizedPhoneNumberException(number, normalizedNumber);
-      }
-    } catch (final NumberParseException e) {
-      throw new ImpossiblePhoneNumberException(e);
-    }
-  }
-
-  public static String getCountryCode(String number) {
-    Matcher matcher = COUNTRY_CODE_PATTERN.matcher(number);
-
-    if (matcher.find()) return matcher.group(1);
-    else                return "0";
-  }
-
-  public static String getNumberPrefix(String number) {
-    String countryCode  = getCountryCode(number);
-    int    remaining    = number.length() - (1 + countryCode.length());
-    int    prefixLength = Math.min(4, remaining);
-
-    return number.substring(0, 1 + countryCode.length() + prefixLength);
+    throw new ImpossibleNikNumberException();
   }
 
   public static boolean isEmpty(String param) {

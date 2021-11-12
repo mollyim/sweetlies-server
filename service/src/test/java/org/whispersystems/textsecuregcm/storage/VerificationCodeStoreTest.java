@@ -45,8 +45,8 @@ class VerificationCodeStoreTest {
   void testStoreAndFind() {
     assertEquals(Optional.empty(), verificationCodeStore.findForNumber(PHONE_NUMBER));
 
-    final StoredVerificationCode originalCode = new StoredVerificationCode("1234", 1111, "abcd", "0987");
-    final StoredVerificationCode secondCode = new StoredVerificationCode("5678", 2222, "efgh", "7890");
+    final StoredVerificationCode originalCode = new StoredVerificationCode("1234", 1111, "abcd");
+    final StoredVerificationCode secondCode = new StoredVerificationCode("5678", 2222, "efgh");
 
     verificationCodeStore.insert(PHONE_NUMBER, originalCode);
     {
@@ -69,7 +69,7 @@ class VerificationCodeStoreTest {
   void testRemove() {
     assertEquals(Optional.empty(), verificationCodeStore.findForNumber(PHONE_NUMBER));
 
-    verificationCodeStore.insert(PHONE_NUMBER, new StoredVerificationCode("1234", 1111, "abcd", "0987"));
+    verificationCodeStore.insert(PHONE_NUMBER, new StoredVerificationCode("1234", 1111, "abcd"));
     assertTrue(verificationCodeStore.findForNumber(PHONE_NUMBER).isPresent());
 
     verificationCodeStore.remove(PHONE_NUMBER);
@@ -85,7 +85,6 @@ class VerificationCodeStoreTest {
 
     return Objects.equals(first.getCode(), second.getCode()) &&
         first.getTimestamp() == second.getTimestamp() &&
-        Objects.equals(first.getPushCode(), second.getPushCode()) &&
-        Objects.equals(first.getTwilioVerificationSid(), second.getTwilioVerificationSid());
+        Objects.equals(first.getPushCode(), second.getPushCode());
   }
 }

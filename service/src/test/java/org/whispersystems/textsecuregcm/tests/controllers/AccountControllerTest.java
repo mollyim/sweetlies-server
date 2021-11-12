@@ -7,9 +7,7 @@ package org.whispersystems.textsecuregcm.tests.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
@@ -26,29 +24,22 @@ import com.google.common.collect.ImmutableSet;
 import io.dropwizard.auth.PolymorphicAuthValueFactoryProvider;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import io.dropwizard.testing.junit5.ResourceExtension;
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
+import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -69,20 +60,15 @@ import org.whispersystems.textsecuregcm.entities.ApnRegistrationId;
 import org.whispersystems.textsecuregcm.entities.ChangePhoneNumberRequest;
 import org.whispersystems.textsecuregcm.entities.GcmRegistrationId;
 import org.whispersystems.textsecuregcm.entities.RegistrationLock;
-import org.whispersystems.textsecuregcm.entities.RegistrationLockFailure;
 import org.whispersystems.textsecuregcm.limits.RateLimiter;
 import org.whispersystems.textsecuregcm.limits.RateLimiters;
-import org.whispersystems.textsecuregcm.mappers.ImpossiblePhoneNumberExceptionMapper;
-import org.whispersystems.textsecuregcm.mappers.NonNormalizedPhoneNumberExceptionMapper;
-import org.whispersystems.textsecuregcm.mappers.NonNormalizedPhoneNumberResponse;
+import org.whispersystems.textsecuregcm.mappers.ImpossibleNikNumberExceptionMapper;
 import org.whispersystems.textsecuregcm.mappers.RateLimitExceededExceptionMapper;
 import org.whispersystems.textsecuregcm.push.APNSender;
 import org.whispersystems.textsecuregcm.push.ApnMessage;
 import org.whispersystems.textsecuregcm.push.GCMSender;
 import org.whispersystems.textsecuregcm.push.GcmMessage;
 import org.whispersystems.textsecuregcm.recaptcha.RecaptchaClient;
-import org.whispersystems.textsecuregcm.sms.SmsSender;
-import org.whispersystems.textsecuregcm.sms.TwilioVerifyExperimentEnrollmentManager;
 import org.whispersystems.textsecuregcm.storage.AbusiveHostRule;
 import org.whispersystems.textsecuregcm.storage.AbusiveHostRules;
 import org.whispersystems.textsecuregcm.storage.Account;
@@ -98,15 +84,15 @@ import org.whispersystems.textsecuregcm.util.SystemMapper;
 @ExtendWith(DropwizardExtensionsSupport.class)
 class AccountControllerTest {
 
-  private static final String SENDER             = "+14152222222";
-  private static final String SENDER_OLD         = "+14151111111";
-  private static final String SENDER_PIN         = "+14153333333";
-  private static final String SENDER_OVER_PIN    = "+14154444444";
-  private static final String SENDER_OVER_PREFIX = "+14156666666";
-  private static final String SENDER_PREAUTH     = "+14157777777";
-  private static final String SENDER_REG_LOCK    = "+14158888888";
-  private static final String SENDER_HAS_STORAGE = "+14159999999";
-  private static final String SENDER_TRANSFER    = "+14151111112";
+  private static final String SENDER             = "+000014152222222";
+  private static final String SENDER_OLD         = "+000014151111111";
+  private static final String SENDER_PIN         = "+000014153333333";
+  private static final String SENDER_OVER_PIN    = "+000014154444444";
+  private static final String SENDER_OVER_PREFIX = "+000014156666666";
+  private static final String SENDER_PREAUTH     = "+000014157777777";
+  private static final String SENDER_REG_LOCK    = "+000014158888888";
+  private static final String SENDER_HAS_STORAGE = "+000014159999999";
+  private static final String SENDER_TRANSFER    = "+000014151111112";
 
   private static final UUID   SENDER_REG_LOCK_UUID = UUID.randomUUID();
   private static final UUID   SENDER_TRANSFER_UUID = UUID.randomUUID();
@@ -131,7 +117,6 @@ class AccountControllerTest {
   private static RateLimiter            smsVoicePrefixLimiter  = mock(RateLimiter.class);
   private static RateLimiter            autoBlockLimiter       = mock(RateLimiter.class);
   private static RateLimiter            usernameSetLimiter     = mock(RateLimiter.class);
-  private static SmsSender              smsSender              = mock(SmsSender.class);
   private static TurnTokenGenerator     turnTokenGenerator     = mock(TurnTokenGenerator.class);
   private static Account                senderPinAccount       = mock(Account.class);
   private static Account                senderRegLockAccount   = mock(Account.class);
@@ -144,9 +129,6 @@ class AccountControllerTest {
 
   private static DynamicConfigurationManager dynamicConfigurationManager = mock(DynamicConfigurationManager.class);
 
-  private static TwilioVerifyExperimentEnrollmentManager verifyExperimentEnrollmentManager = mock(
-      TwilioVerifyExperimentEnrollmentManager.class);
-
   private byte[] registration_lock_key = new byte[32];
   private static ExternalServiceCredentialGenerator storageCredentialGenerator = new ExternalServiceCredentialGenerator(new byte[32], new byte[32], false);
 
@@ -157,8 +139,7 @@ class AccountControllerTest {
               ImmutableSet.of(AuthenticatedAccount.class,
                   DisabledPermittedAuthenticatedAccount.class)))
       .addProvider(new RateLimitExceededExceptionMapper())
-      .addProvider(new ImpossiblePhoneNumberExceptionMapper())
-      .addProvider(new NonNormalizedPhoneNumberExceptionMapper())
+      .addProvider(new ImpossibleNikNumberExceptionMapper())
       .setMapper(SystemMapper.getMapper())
       .setTestContainerFactory(new GrizzlyWebTestContainerFactory())
       .addResource(new AccountController(pendingAccountsManager,
@@ -166,15 +147,13 @@ class AccountControllerTest {
           usernamesManager,
           abusiveHostRules,
           rateLimiters,
-          smsSender,
           dynamicConfigurationManager,
           turnTokenGenerator,
           new HashMap<>(),
           recaptchaClient,
           gcmSender,
           apnSender,
-          storageCredentialGenerator,
-          verifyExperimentEnrollmentManager))
+          storageCredentialGenerator))
       .build();
 
 
@@ -213,15 +192,15 @@ class AccountControllerTest {
     when(senderTransfer.getUuid()).thenReturn(SENDER_TRANSFER_UUID);
     when(senderTransfer.getNumber()).thenReturn(SENDER_TRANSFER);
 
-    when(pendingAccountsManager.getCodeForNumber(SENDER)).thenReturn(Optional.of(new StoredVerificationCode("1234", System.currentTimeMillis(), "1234-push", null)));
+    when(pendingAccountsManager.getCodeForNumber(SENDER)).thenReturn(Optional.of(new StoredVerificationCode("1234", System.currentTimeMillis(), "1234-push")));
     when(pendingAccountsManager.getCodeForNumber(SENDER_OLD)).thenReturn(Optional.empty());
-    when(pendingAccountsManager.getCodeForNumber(SENDER_PIN)).thenReturn(Optional.of(new StoredVerificationCode("333333", System.currentTimeMillis(), null, null)));
-    when(pendingAccountsManager.getCodeForNumber(SENDER_REG_LOCK)).thenReturn(Optional.of(new StoredVerificationCode("666666", System.currentTimeMillis(), null, null)));
-    when(pendingAccountsManager.getCodeForNumber(SENDER_OVER_PIN)).thenReturn(Optional.of(new StoredVerificationCode("444444", System.currentTimeMillis(), null, null)));
-    when(pendingAccountsManager.getCodeForNumber(SENDER_OVER_PREFIX)).thenReturn(Optional.of(new StoredVerificationCode("777777", System.currentTimeMillis(), "1234-push", null)));
-    when(pendingAccountsManager.getCodeForNumber(SENDER_PREAUTH)).thenReturn(Optional.of(new StoredVerificationCode("555555", System.currentTimeMillis(), "validchallenge", null)));
-    when(pendingAccountsManager.getCodeForNumber(SENDER_HAS_STORAGE)).thenReturn(Optional.of(new StoredVerificationCode("666666", System.currentTimeMillis(), null, null)));
-    when(pendingAccountsManager.getCodeForNumber(SENDER_TRANSFER)).thenReturn(Optional.of(new StoredVerificationCode("1234", System.currentTimeMillis(), null, null)));
+    when(pendingAccountsManager.getCodeForNumber(SENDER_PIN)).thenReturn(Optional.of(new StoredVerificationCode("333333", System.currentTimeMillis(), null)));
+    when(pendingAccountsManager.getCodeForNumber(SENDER_REG_LOCK)).thenReturn(Optional.of(new StoredVerificationCode("666666", System.currentTimeMillis(), null)));
+    when(pendingAccountsManager.getCodeForNumber(SENDER_OVER_PIN)).thenReturn(Optional.of(new StoredVerificationCode("444444", System.currentTimeMillis(), null)));
+    when(pendingAccountsManager.getCodeForNumber(SENDER_OVER_PREFIX)).thenReturn(Optional.of(new StoredVerificationCode("777777", System.currentTimeMillis(), "1234-push")));
+    when(pendingAccountsManager.getCodeForNumber(SENDER_PREAUTH)).thenReturn(Optional.of(new StoredVerificationCode("555555", System.currentTimeMillis(), "validchallenge")));
+    when(pendingAccountsManager.getCodeForNumber(SENDER_HAS_STORAGE)).thenReturn(Optional.of(new StoredVerificationCode("666666", System.currentTimeMillis(), null)));
+    when(pendingAccountsManager.getCodeForNumber(SENDER_TRANSFER)).thenReturn(Optional.of(new StoredVerificationCode("1234", System.currentTimeMillis(), null)));
 
     when(accountsManager.get(eq(SENDER_PIN))).thenReturn(Optional.of(senderPinAccount));
     when(accountsManager.get(eq(SENDER_REG_LOCK))).thenReturn(Optional.of(senderRegLockAccount));
@@ -282,7 +261,6 @@ class AccountControllerTest {
         smsVoicePrefixLimiter,
         autoBlockLimiter,
         usernameSetLimiter,
-        smsSender,
         turnTokenGenerator,
         senderPinAccount,
         senderRegLockAccount,
@@ -291,8 +269,7 @@ class AccountControllerTest {
         recaptchaClient,
         gcmSender,
         apnSender,
-        usernamesManager,
-        verifyExperimentEnrollmentManager);
+        usernamesManager);
 
     clearInvocations(AuthHelper.DISABLED_DEVICE);
   }
@@ -300,7 +277,7 @@ class AccountControllerTest {
   @Test
   void testGetFcmPreauth() throws Exception {
     Response response = resources.getJerseyTest()
-                                 .target("/v1/accounts/fcm/preauth/mytoken/+14152222222")
+                                 .target("/v1/accounts/fcm/preauth/mytoken/+000014152222222")
                                  .request()
                                  .get();
 
@@ -319,7 +296,7 @@ class AccountControllerTest {
   @Test
   void testGetFcmPreauthIvoryCoast() throws Exception {
     Response response = resources.getJerseyTest()
-            .target("/v1/accounts/fcm/preauth/mytoken/+2250707312345")
+            .target("/v1/accounts/fcm/preauth/mytoken/+000022507073123")
             .request()
             .get();
 
@@ -338,7 +315,7 @@ class AccountControllerTest {
   @Test
   void testGetApnPreauth() throws Exception {
     Response response = resources.getJerseyTest()
-                                 .target("/v1/accounts/apn/preauth/mytoken/+14152222222")
+                                 .target("/v1/accounts/apn/preauth/mytoken/+000014152222222")
                                  .request()
                                  .get();
 
@@ -359,7 +336,7 @@ class AccountControllerTest {
   @Test
   void testGetApnPreauthExplicitVoip() throws Exception {
     Response response = resources.getJerseyTest()
-        .target("/v1/accounts/apn/preauth/mytoken/+14152222222")
+        .target("/v1/accounts/apn/preauth/mytoken/+000014152222222")
         .queryParam("voip", "true")
         .request()
         .get();
@@ -381,7 +358,7 @@ class AccountControllerTest {
   @Test
   void testGetApnPreauthExplicitNoVoip() throws Exception {
     Response response = resources.getJerseyTest()
-        .target("/v1/accounts/apn/preauth/mytoken/+14152222222")
+        .target("/v1/accounts/apn/preauth/mytoken/+000014152222222")
         .queryParam("voip", "false")
         .request()
         .get();
@@ -415,616 +392,6 @@ class AccountControllerTest {
   }
 
   @Test
-  void testGetPreauthNonNormalized() {
-    final String number = "+4407700900111";
-
-    final Response response = resources.getJerseyTest()
-        .target("/v1/accounts/fcm/preauth/mytoken/" + number)
-        .request()
-        .get();
-
-    assertThat(response.getStatus()).isEqualTo(400);
-
-    final NonNormalizedPhoneNumberResponse responseEntity = response.readEntity(NonNormalizedPhoneNumberResponse.class);
-    assertThat(responseEntity.getOriginalNumber()).isEqualTo(number);
-    assertThat(responseEntity.getNormalizedNumber()).isEqualTo("+447700900111");
-
-    verifyNoMoreInteractions(gcmSender);
-    verifyNoMoreInteractions(apnSender);
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendCode(final boolean enrolledInVerifyExperiment) throws Exception {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", NICE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    if (enrolledInVerifyExperiment) {
-      ArgumentCaptor<StoredVerificationCode> storedVerificationCodeArgumentCaptor = ArgumentCaptor
-          .forClass(StoredVerificationCode.class);
-
-      verify(smsSender).deliverSmsVerificationWithTwilioVerify(eq(SENDER), eq(Optional.empty()), anyString(), eq(Collections.emptyList()));
-      verify(pendingAccountsManager, times(2)).store(eq(SENDER), storedVerificationCodeArgumentCaptor.capture());
-
-      assertThat(storedVerificationCodeArgumentCaptor.getValue().getTwilioVerificationSid())
-          .isEqualTo(Optional.of("VerificationSid"));
-
-    } else {
-      verify(smsSender).deliverSmsVerification(eq(SENDER), eq(Optional.empty()), anyString());
-    }
-    verifyNoMoreInteractions(smsSender);
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(NICE_HOST));
-  }
-
-  @Test
-  void testSendCodeImpossibleNumber() {
-    final Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/sms/code/%s", "Definitely not a real number"))
-            .queryParam("challenge", "1234-push")
-            .request()
-            .header("X-Forwarded-For", NICE_HOST)
-            .get();
-
-    assertThat(response.getStatus()).isEqualTo(400);
-    assertThat(response.readEntity(String.class)).isBlank();
-
-    verify(smsSender, never()).deliverSmsVerification(any(), any(), any());
-  }
-
-  @Test
-  void testSendCodeNonNormalized() {
-    final String number = "+4407700900111";
-
-    final Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/sms/code/%s", number))
-            .queryParam("challenge", "1234-push")
-            .request()
-            .header("X-Forwarded-For", NICE_HOST)
-            .get();
-
-    assertThat(response.getStatus()).isEqualTo(400);
-
-    final NonNormalizedPhoneNumberResponse responseEntity = response.readEntity(NonNormalizedPhoneNumberResponse.class);
-    assertThat(responseEntity.getOriginalNumber()).isEqualTo(number);
-    assertThat(responseEntity.getNormalizedNumber()).isEqualTo("+447700900111");
-
-    verify(smsSender, never()).deliverSmsVerification(any(), any(), any());
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  public void testSendCodeVoiceNoLocale(final boolean enrolledInVerifyExperiment) throws Exception {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverVoxVerificationWithTwilioVerify(anyString(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/voice/code/%s", SENDER))
-            .queryParam("challenge", "1234-push")
-            .request()
-            .header("X-Forwarded-For", NICE_HOST)
-            .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender).deliverVoxVerificationWithTwilioVerify(eq(SENDER), anyString(), eq(Collections.emptyList()));
-    } else {
-      verify(smsSender).deliverVoxVerification(eq(SENDER), anyString(), eq(Collections.emptyList()));
-    }
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(NICE_HOST));
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  public void testSendCodeVoiceSingleLocale(final boolean enrolledInVerifyExperiment) throws Exception {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverVoxVerificationWithTwilioVerify(anyString(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/voice/code/%s", SENDER))
-            .queryParam("challenge", "1234-push")
-            .request()
-            .header("Accept-Language", "pt-BR")
-            .header("X-Forwarded-For", NICE_HOST)
-            .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender)
-          .deliverVoxVerificationWithTwilioVerify(eq(SENDER), anyString(), eq(Locale.LanguageRange.parse("pt-BR")));
-    } else {
-      verify(smsSender).deliverVoxVerification(eq(SENDER), anyString(), eq(Locale.LanguageRange.parse("pt-BR")));
-    }
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(NICE_HOST));
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  public void testSendCodeVoiceMultipleLocales(final boolean enrolledInVerifyExperiment) throws Exception {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverVoxVerificationWithTwilioVerify(anyString(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/voice/code/%s", SENDER))
-            .queryParam("challenge", "1234-push")
-            .request()
-            .header("Accept-Language", "en-US;q=1, ar-US;q=0.9, fa-US;q=0.8, zh-Hans-US;q=0.7, ru-RU;q=0.6, zh-Hant-US;q=0.5")
-            .header("X-Forwarded-For", NICE_HOST)
-            .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender).deliverVoxVerificationWithTwilioVerify(eq(SENDER), anyString(), eq(Locale.LanguageRange
-          .parse("en-US;q=1, ar-US;q=0.9, fa-US;q=0.8, zh-Hans-US;q=0.7, ru-RU;q=0.6, zh-Hant-US;q=0.5")));
-    } else {
-      verify(smsSender).deliverVoxVerification(eq(SENDER), anyString(), eq(Locale.LanguageRange
-          .parse("en-US;q=1, ar-US;q=0.9, fa-US;q=0.8, zh-Hans-US;q=0.7, ru-RU;q=0.6, zh-Hant-US;q=0.5")));
-    }
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(NICE_HOST));
-  }
-
-  @Test
-  void testSendCodeVoiceInvalidLocale() throws Exception {
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/voice/code/%s", SENDER))
-            .queryParam("challenge", "1234-push")
-            .request()
-            .header("Accept-Language", "This is not a reasonable Accept-Language value")
-            .header("X-Forwarded-For", NICE_HOST)
-            .get();
-
-    assertThat(response.getStatus()).isEqualTo(400);
-
-    verify(smsSender, never()).deliverVoxVerification(eq(SENDER), anyString(), any());
-    verify(smsSender, never()).deliverVoxVerificationWithTwilioVerify(eq(SENDER), anyString(), any());
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(NICE_HOST));
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendCodeWithValidPreauth(final boolean enrolledInVerifyExperiment) throws Exception {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER_PREAUTH))
-                 .queryParam("challenge", "validchallenge")
-                 .request()
-                 .header("X-Forwarded-For", NICE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender).deliverSmsVerificationWithTwilioVerify(eq(SENDER_PREAUTH), eq(Optional.empty()), anyString(),
-          eq(Collections.emptyList()));
-    } else {
-      verify(smsSender).deliverSmsVerification(eq(SENDER_PREAUTH), eq(Optional.empty()), anyString());
-    }
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(NICE_HOST));
-  }
-
-  @Test
-  void testSendCodeWithInvalidPreauth() throws Exception {
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER_PREAUTH))
-                 .queryParam("challenge", "invalidchallenge")
-                 .request()
-                 .header("X-Forwarded-For", NICE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verifyNoMoreInteractions(smsSender);
-    verifyNoMoreInteractions(abusiveHostRules);
-  }
-
-  @Test
-  void testSendCodeWithNoPreauth() throws Exception {
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER_PREAUTH))
-                 .request()
-                 .header("X-Forwarded-For", NICE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verify(smsSender, never()).deliverSmsVerification(eq(SENDER_PREAUTH), eq(Optional.empty()), anyString());
-    verify(smsSender, never()).deliverSmsVerificationWithTwilioVerify(eq(SENDER_PREAUTH), eq(Optional.empty()), anyString(), anyList());
-  }
-
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendiOSCode(final boolean enrolledInVerifyExperiment) throws Exception {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("client", "ios")
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", NICE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender).deliverSmsVerificationWithTwilioVerify(eq(SENDER), eq(Optional.of("ios")), anyString(),
-          eq(Collections.emptyList()));
-    } else {
-      verify(smsSender).deliverSmsVerification(eq(SENDER), eq(Optional.of("ios")), anyString());
-    }
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendAndroidNgCode(final boolean enrolledInVerifyExperiment) throws Exception {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("client", "android-ng")
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", NICE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender).deliverSmsVerificationWithTwilioVerify(eq(SENDER), eq(Optional.of("android-ng")), anyString(),
-          eq(Collections.emptyList()));
-    } else {
-      verify(smsSender).deliverSmsVerification(eq(SENDER), eq(Optional.of("android-ng")), anyString());
-    }
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendAbusiveHost(final boolean enrolledInVerifyExperiment) {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", ABUSIVE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(ABUSIVE_HOST));
-    verifyNoMoreInteractions(smsSender);
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendAbusiveHostWithValidCaptcha(final boolean enrolledInVerifyExperiment) throws IOException {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("captcha", VALID_CAPTCHA_TOKEN)
-                 .request()
-                 .header("X-Forwarded-For", ABUSIVE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    verifyNoMoreInteractions(abusiveHostRules);
-    verify(recaptchaClient).verify(eq(VALID_CAPTCHA_TOKEN), eq(ABUSIVE_HOST));
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender).deliverSmsVerificationWithTwilioVerify(eq(SENDER), eq(Optional.empty()), anyString(),
-          eq(Collections.emptyList()));
-    } else {
-      verify(smsSender).deliverSmsVerification(eq(SENDER), eq(Optional.empty()), anyString());
-    }
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendAbusiveHostWithInvalidCaptcha(final boolean enrolledInVerifyExperiment) {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("captcha", INVALID_CAPTCHA_TOKEN)
-                 .request()
-                 .header("X-Forwarded-For", ABUSIVE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verifyNoMoreInteractions(abusiveHostRules);
-    verify(recaptchaClient).verify(eq(INVALID_CAPTCHA_TOKEN), eq(ABUSIVE_HOST));
-    verifyNoMoreInteractions(smsSender);
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendRateLimitedHostAutoBlock(final boolean enrolledInVerifyExperiment) {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", RATE_LIMITED_IP_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(RATE_LIMITED_IP_HOST));
-    verify(abusiveHostRules).setBlockedHost(eq(RATE_LIMITED_IP_HOST), eq("Auto-Block"));
-    verifyNoMoreInteractions(abusiveHostRules);
-
-    verifyNoMoreInteractions(recaptchaClient);
-    verifyNoMoreInteractions(smsSender);
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendRateLimitedPrefixAutoBlock(final boolean enrolledInVerifyExperiment) {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER_OVER_PREFIX))
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", RATE_LIMITED_PREFIX_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(RATE_LIMITED_PREFIX_HOST));
-    verify(abusiveHostRules).setBlockedHost(eq(RATE_LIMITED_PREFIX_HOST), eq("Auto-Block"));
-    verifyNoMoreInteractions(abusiveHostRules);
-
-    verifyNoMoreInteractions(recaptchaClient);
-    verifyNoMoreInteractions(smsSender);
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendRateLimitedHostNoAutoBlock(final boolean enrolledInVerifyExperiment) {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", RATE_LIMITED_HOST2)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(RATE_LIMITED_HOST2));
-    verifyNoMoreInteractions(abusiveHostRules);
-
-    verifyNoMoreInteractions(recaptchaClient);
-    verifyNoMoreInteractions(smsSender);
-  }
-
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendMultipleHost(final boolean enrolledInVerifyExperiment) {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", NICE_HOST + ", " + ABUSIVE_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verify(abusiveHostRules, times(1)).getAbusiveHostRulesFor(eq(ABUSIVE_HOST));
-
-    verifyNoMoreInteractions(abusiveHostRules);
-    verifyNoMoreInteractions(smsSender);
-  }
-
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendRestrictedHostOut(final boolean enrolledInVerifyExperiment) {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-                 .queryParam("challenge", "1234-push")
-                 .request()
-                 .header("X-Forwarded-For", RESTRICTED_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(402);
-
-    verify(abusiveHostRules).getAbusiveHostRulesFor(eq(RESTRICTED_HOST));
-    verifyNoMoreInteractions(smsSender);
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testSendRestrictedIn(final boolean enrolledInVerifyExperiment) throws Exception {
-
-    when(verifyExperimentEnrollmentManager.isEnrolled(any(), anyString(), anyList(), anyString()))
-        .thenReturn(enrolledInVerifyExperiment);
-
-    if (enrolledInVerifyExperiment) {
-      when(smsSender.deliverSmsVerificationWithTwilioVerify(anyString(), any(), anyString(), anyList()))
-          .thenReturn(CompletableFuture.completedFuture(Optional.of("VerificationSid")));
-    }
-
-    final String number = "+12345678901";
-    final String challenge = "challenge";
-
-    when(pendingAccountsManager.getCodeForNumber(number)).thenReturn(Optional.of(new StoredVerificationCode("123456", System.currentTimeMillis(), challenge, null)));
-
-    Response response =
-        resources.getJerseyTest()
-                 .target(String.format("/v1/accounts/sms/code/%s", number))
-                 .queryParam("challenge", challenge)
-                 .request()
-                 .header("X-Forwarded-For", RESTRICTED_HOST)
-                 .get();
-
-    assertThat(response.getStatus()).isEqualTo(200);
-
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender).deliverSmsVerificationWithTwilioVerify(eq(number), eq(Optional.empty()), anyString(),
-          eq(Collections.emptyList()));
-    } else {
-      verify(smsSender).deliverSmsVerification(eq(number), eq(Optional.empty()), anyString());
-    }
-
-    verifyNoMoreInteractions(smsSender);
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void testVerifyCode(final boolean enrolledInVerifyExperiment) throws Exception {
-    if (enrolledInVerifyExperiment) {
-      when(pendingAccountsManager.getCodeForNumber(SENDER)).thenReturn(
-          Optional.of(new StoredVerificationCode("1234", System.currentTimeMillis(), "1234-push", "VerificationSid")));;
-    }
-
-    resources.getJerseyTest()
-             .target(String.format("/v1/accounts/code/%s", "1234"))
-             .request()
-             .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER, "bar"))
-             .put(Entity.entity(new AccountAttributes(), MediaType.APPLICATION_JSON_TYPE), AccountCreationResult.class);
-
-    verify(accountsManager).create(eq(SENDER), eq("bar"), any(), any());
-
-    if (enrolledInVerifyExperiment) {
-      verify(smsSender).reportVerificationSucceeded("VerificationSid");
-    }
-  }
-
-  @Test
   void testVerifyCodeBadCredentials() {
     final Response response = resources.getJerseyTest()
         .target(String.format("/v1/accounts/code/%s", "1234"))
@@ -1036,183 +403,12 @@ class AccountControllerTest {
   }
 
   @Test
-  void testVerifyCodeOld() {
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "1234"))
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_OLD, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 2222, null, null, true, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(403);
-
-    verifyNoMoreInteractions(accountsManager);
-  }
-
-  @Test
-  void testVerifyBadCode() {
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "1111"))
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 3333, null, null, true, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(403);
-
-    verifyNoMoreInteractions(accountsManager);
-  }
-
-  @Test
-  void testVerifyRegistrationLock() throws Exception {
-    AccountCreationResult result =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "666666"))
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_REG_LOCK, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 3333, null, Hex.toStringCondensed(registration_lock_key), true, null),
-                MediaType.APPLICATION_JSON_TYPE), AccountCreationResult.class);
-
-    assertThat(result.getUuid()).isNotNull();
-
-    verify(pinLimiter).validate(eq(SENDER_REG_LOCK));
-  }
-
-  @Test
-  void testVerifyRegistrationLockSetsRegistrationLockOnNewAccount() throws Exception {
-    AccountCreationResult result =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "666666"))
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_REG_LOCK, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 3333, null, Hex.toStringCondensed(registration_lock_key), true, null),
-                MediaType.APPLICATION_JSON_TYPE), AccountCreationResult.class);
-
-    assertThat(result.getUuid()).isNotNull();
-
-    verify(pinLimiter).validate(eq(SENDER_REG_LOCK));
-
-    verify(accountsManager).create(eq(SENDER_REG_LOCK), eq("bar"), any(), argThat(
-        attributes -> Hex.toStringCondensed(registration_lock_key).equals(attributes.getRegistrationLock())));
-  }
-
-  @Test
-  void testVerifyRegistrationLockOld() {
-    StoredRegistrationLock lock = senderRegLockAccount.getRegistrationLock();
-
-    try {
-      when(senderRegLockAccount.getRegistrationLock()).thenReturn(lock.forTime(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7)));
-
-      AccountCreationResult result =
-          resources.getJerseyTest()
-              .target(String.format("/v1/accounts/code/%s", "666666"))
-              .request()
-              .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_REG_LOCK, "bar"))
-              .put(Entity.entity(new AccountAttributes(false, 3333, null, null, true, null),
-                  MediaType.APPLICATION_JSON_TYPE), AccountCreationResult.class);
-
-      assertThat(result.getUuid()).isNotNull();
-
-      verifyNoMoreInteractions(pinLimiter);
-    } finally {
-      when(senderRegLockAccount.getRegistrationLock()).thenReturn(lock);
-    }
-  }
-
-  @Test
-  void testVerifyWrongRegistrationLock() throws Exception {
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "666666"))
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_REG_LOCK, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 3333, null,
-                    Hex.toStringCondensed(new byte[32]), true, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(423);
-
-    verify(pinLimiter).validate(eq(SENDER_REG_LOCK));
-  }
-
-  @Test
-  void testVerifyNoRegistrationLock() throws Exception {
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "666666"))
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_REG_LOCK, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 3333, null, null, true, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(423);
-
-    RegistrationLockFailure failure = response.readEntity(RegistrationLockFailure.class);
-    assertThat(failure.getBackupCredentials()).isNotNull();
-    assertThat(failure.getBackupCredentials().getUsername()).isEqualTo(SENDER_REG_LOCK_UUID.toString());
-    assertThat(failure.getBackupCredentials().getPassword()).isNotEmpty();
-    assertThat(failure.getBackupCredentials().getPassword().startsWith(SENDER_REG_LOCK_UUID.toString())).isTrue();
-    assertThat(failure.getTimeRemaining()).isGreaterThan(0);
-
-    verifyNoMoreInteractions(pinLimiter);
-  }
-
-  @Test
-  void testVerifyTransferSupported() {
-    when(senderTransfer.isTransferSupported()).thenReturn(true);
-
-    final Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "1234"))
-            .queryParam("transfer", true)
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_TRANSFER, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 2222, null, null, true, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(409);
-  }
-
-  @Test
-  void testVerifyTransferNotSupported() {
-    when(senderTransfer.isTransferSupported()).thenReturn(false);
-
-    final Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "1234"))
-            .queryParam("transfer", true)
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_TRANSFER, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 2222, null, null, true, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(200);
-  }
-
-  @Test
-  void testVerifyTransferSupportedNotRequested() {
-    when(senderTransfer.isTransferSupported()).thenReturn(true);
-
-    final Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/code/%s", "1234"))
-            .request()
-            .header("Authorization", AuthHelper.getProvisioningAuthHeader(SENDER_TRANSFER, "bar"))
-            .put(Entity.entity(new AccountAttributes(false, 2222, null, null, true, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(200);
-  }
-
-  @Test
   void testChangePhoneNumber() throws InterruptedException {
-    final String number = "+18005559876";
+    final String number = "+000018005559876";
     final String code = "987654";
 
     when(pendingAccountsManager.getCodeForNumber(number)).thenReturn(Optional.of(
-        new StoredVerificationCode(code, System.currentTimeMillis(), "push", null)));
+        new StoredVerificationCode(code, System.currentTimeMillis(), "push")));
 
     final Response response =
         resources.getJerseyTest()
@@ -1245,28 +441,6 @@ class AccountControllerTest {
   }
 
   @Test
-  void testChangePhoneNumberNonNormalized() throws InterruptedException {
-    final String number = "+4407700900111";
-    final String code = "987654";
-
-    final Response response =
-        resources.getJerseyTest()
-            .target("/v1/accounts/number")
-            .request()
-            .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID, AuthHelper.VALID_PASSWORD))
-            .put(Entity.entity(new ChangePhoneNumberRequest(number, code, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(400);
-
-    final NonNormalizedPhoneNumberResponse responseEntity = response.readEntity(NonNormalizedPhoneNumberResponse.class);
-    assertThat(responseEntity.getOriginalNumber()).isEqualTo(number);
-    assertThat(responseEntity.getNormalizedNumber()).isEqualTo("+447700900111");
-
-    verify(accountsManager, never()).changeNumber(any(), any());
-  }
-
-  @Test
   void testChangePhoneNumberSameNumber() throws InterruptedException {
     final Response response =
         resources.getJerseyTest()
@@ -1281,51 +455,12 @@ class AccountControllerTest {
   }
 
   @Test
-  void testChangePhoneNumberNoPendingCode() throws InterruptedException {
-    final String number = "+18005559876";
-    final String code = "987654";
-
-    when(pendingAccountsManager.getCodeForNumber(number)).thenReturn(Optional.empty());
-
-    final Response response =
-        resources.getJerseyTest()
-            .target("/v1/accounts/number")
-            .request()
-            .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID, AuthHelper.VALID_PASSWORD))
-            .put(Entity.entity(new ChangePhoneNumberRequest(number, code, null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(403);
-    verify(accountsManager, never()).changeNumber(eq(AuthHelper.VALID_ACCOUNT), any());
-  }
-
-  @Test
-  void testChangePhoneNumberIncorrectCode() throws InterruptedException {
-    final String number = "+18005559876";
-    final String code = "987654";
-
-    when(pendingAccountsManager.getCodeForNumber(number)).thenReturn(Optional.of(
-        new StoredVerificationCode(code, System.currentTimeMillis(), "push", null)));
-
-    final Response response =
-        resources.getJerseyTest()
-            .target("/v1/accounts/number")
-            .request()
-            .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID, AuthHelper.VALID_PASSWORD))
-            .put(Entity.entity(new ChangePhoneNumberRequest(number, code + "-incorrect", null),
-                MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(403);
-    verify(accountsManager, never()).changeNumber(eq(AuthHelper.VALID_ACCOUNT), any());
-  }
-
-  @Test
   void testChangePhoneNumberExistingAccountReglockNotRequired() throws InterruptedException {
-    final String number = "+18005559876";
+    final String number = "+000018005559876";
     final String code = "987654";
 
     when(pendingAccountsManager.getCodeForNumber(number)).thenReturn(Optional.of(
-        new StoredVerificationCode(code, System.currentTimeMillis(), "push", null)));
+        new StoredVerificationCode(code, System.currentTimeMillis(), "push")));
 
     final StoredRegistrationLock existingRegistrationLock = mock(StoredRegistrationLock.class);
     when(existingRegistrationLock.requiresClientRegistrationLock()).thenReturn(false);
@@ -1351,11 +486,11 @@ class AccountControllerTest {
 
   @Test
   void testChangePhoneNumberExistingAccountReglockRequiredNotProvided() throws InterruptedException {
-    final String number = "+18005559876";
+    final String number = "+000018005559876";
     final String code = "987654";
 
     when(pendingAccountsManager.getCodeForNumber(number)).thenReturn(Optional.of(
-        new StoredVerificationCode(code, System.currentTimeMillis(), "push", null)));
+        new StoredVerificationCode(code, System.currentTimeMillis(), "push")));
 
     final StoredRegistrationLock existingRegistrationLock = mock(StoredRegistrationLock.class);
     when(existingRegistrationLock.requiresClientRegistrationLock()).thenReturn(true);
@@ -1381,12 +516,12 @@ class AccountControllerTest {
 
   @Test
   void testChangePhoneNumberExistingAccountReglockRequiredIncorrect() throws InterruptedException {
-    final String number = "+18005559876";
+    final String number = "+000018005559876";
     final String code = "987654";
     final String reglock = "setec-astronomy";
 
     when(pendingAccountsManager.getCodeForNumber(number)).thenReturn(Optional.of(
-        new StoredVerificationCode(code, System.currentTimeMillis(), "push", null)));
+        new StoredVerificationCode(code, System.currentTimeMillis(), "push")));
 
     final StoredRegistrationLock existingRegistrationLock = mock(StoredRegistrationLock.class);
     when(existingRegistrationLock.requiresClientRegistrationLock()).thenReturn(true);
@@ -1413,12 +548,12 @@ class AccountControllerTest {
 
   @Test
   void testChangePhoneNumberExistingAccountReglockRequiredCorrect() throws InterruptedException {
-    final String number = "+18005559876";
+    final String number = "+000018005559876";
     final String code = "987654";
     final String reglock = "setec-astronomy";
 
     when(pendingAccountsManager.getCodeForNumber(number)).thenReturn(Optional.of(
-        new StoredVerificationCode(code, System.currentTimeMillis(), "push", null)));
+        new StoredVerificationCode(code, System.currentTimeMillis(), "push")));
 
     final StoredRegistrationLock existingRegistrationLock = mock(StoredRegistrationLock.class);
     when(existingRegistrationLock.requiresClientRegistrationLock()).thenReturn(true);
@@ -1696,39 +831,5 @@ class AccountControllerTest {
 
     assertThat(response.getStatus()).isEqualTo(500);
     verify(accountsManager).delete(AuthHelper.VALID_ACCOUNT, AccountsManager.DeletionReason.USER_REQUEST);
-  }
-
-  @ParameterizedTest
-  @MethodSource
-  void testSignupCaptcha(final String message, final boolean enforced, final Set<String> countryCodes, final int expectedResponseStatusCode) {
-    DynamicConfiguration dynamicConfiguration = mock(DynamicConfiguration.class);
-    when(dynamicConfigurationManager.getConfiguration())
-        .thenReturn(dynamicConfiguration);
-
-    DynamicSignupCaptchaConfiguration signupCaptchaConfig = new DynamicSignupCaptchaConfiguration();
-    signupCaptchaConfig.setCountryCodes(countryCodes);
-    when(dynamicConfiguration.getSignupCaptchaConfiguration())
-        .thenReturn(signupCaptchaConfig);
-
-    Response response =
-        resources.getJerseyTest()
-            .target(String.format("/v1/accounts/sms/code/%s", SENDER))
-            .queryParam("challenge", "1234-push")
-            .request()
-            .header("X-Forwarded-For", NICE_HOST)
-            .get();
-
-    assertThat(response.getStatus()).isEqualTo(expectedResponseStatusCode);
-
-    verify(smsSender, 200 == expectedResponseStatusCode ? times(1) : never())
-        .deliverSmsVerification(eq(SENDER), eq(Optional.empty()), anyString());
-  }
-
-  static Stream<Arguments> testSignupCaptcha() {
-    return Stream.of(
-        Arguments.of("captcha not enforced", false, Collections.emptySet(), 200),
-        Arguments.of("no enforced country codes", true, Collections.emptySet(), 200),
-        Arguments.of("captcha enforced", true, Set.of("1"), 402)
-    );
   }
 }

@@ -52,18 +52,6 @@ public class ExperimentEnrollmentManager {
         return false;
       }
 
-      {
-        final String countryCode = Util.getCountryCode(e164);
-
-        if (config.getIncludedCountryCodes().contains(countryCode)) {
-          return true;
-        }
-
-        if (config.getExcludedCountryCodes().contains(countryCode)) {
-          return false;
-        }
-      }
-
       return isEnrolled(e164, config.getEnrollmentPercentage(), experimentName);
 
     }).orElse(false);

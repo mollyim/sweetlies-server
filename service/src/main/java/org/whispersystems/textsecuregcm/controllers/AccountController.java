@@ -17,12 +17,9 @@ import io.micrometer.core.instrument.Tag;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.validation.Valid;
@@ -52,7 +49,6 @@ import org.whispersystems.textsecuregcm.auth.StoredVerificationCode;
 import org.whispersystems.textsecuregcm.auth.TurnToken;
 import org.whispersystems.textsecuregcm.auth.TurnTokenGenerator;
 import org.whispersystems.textsecuregcm.configuration.dynamic.DynamicConfiguration;
-import org.whispersystems.textsecuregcm.configuration.dynamic.DynamicSignupCaptchaConfiguration;
 import org.whispersystems.textsecuregcm.entities.AccountAttributes;
 import org.whispersystems.textsecuregcm.entities.AccountCreationResult;
 import org.whispersystems.textsecuregcm.entities.ApnRegistrationId;
@@ -68,8 +64,6 @@ import org.whispersystems.textsecuregcm.push.ApnMessage;
 import org.whispersystems.textsecuregcm.push.GCMSender;
 import org.whispersystems.textsecuregcm.push.GcmMessage;
 import org.whispersystems.textsecuregcm.recaptcha.RecaptchaClient;
-import org.whispersystems.textsecuregcm.sms.SmsSender;
-import org.whispersystems.textsecuregcm.sms.TwilioVerifyExperimentEnrollmentManager;
 import org.whispersystems.textsecuregcm.storage.AbusiveHostRule;
 import org.whispersystems.textsecuregcm.storage.AbusiveHostRules;
 import org.whispersystems.textsecuregcm.storage.Account;
@@ -81,8 +75,7 @@ import org.whispersystems.textsecuregcm.storage.UsernamesManager;
 import org.whispersystems.textsecuregcm.util.Constants;
 import org.whispersystems.textsecuregcm.util.ForwardedIpUtil;
 import org.whispersystems.textsecuregcm.util.Hex;
-import org.whispersystems.textsecuregcm.util.ImpossiblePhoneNumberException;
-import org.whispersystems.textsecuregcm.util.NonNormalizedPhoneNumberException;
+import org.whispersystems.textsecuregcm.util.ImpossibleNikNumberException;
 import org.whispersystems.textsecuregcm.util.Util;
 import org.whispersystems.textsecuregcm.util.VerificationCode;
 
@@ -104,20 +97,15 @@ public class AccountController {
   private static final String ACCOUNT_CREATE_COUNTER_NAME = name(AccountController.class, "create");
   private static final String ACCOUNT_VERIFY_COUNTER_NAME = name(AccountController.class, "verify");
 
-  private static final String TWILIO_VERIFY_ERROR_COUNTER_NAME = name(AccountController.class, "twilioVerifyError");
-
   private static final String CHALLENGE_PRESENT_TAG_NAME = "present";
   private static final String CHALLENGE_MATCH_TAG_NAME = "matches";
   private static final String VERFICATION_TRANSPORT_TAG_NAME = "transport";
-
-  private static final String VERIFY_EXPERIMENT_TAG_NAME = "twilioVerify";
 
   private final StoredVerificationCodeManager      pendingAccounts;
   private final AccountsManager                    accounts;
   private final UsernamesManager                   usernames;
   private final AbusiveHostRules                   abusiveHostRules;
   private final RateLimiters                       rateLimiters;
-  private final SmsSender                          smsSender;
   private final DynamicConfigurationManager<DynamicConfiguration> dynamicConfigurationManager;
   private final TurnTokenGenerator                 turnTokenGenerator;
   private final Map<String, Integer>               testDevices;
@@ -126,29 +114,24 @@ public class AccountController {
   private final APNSender                          apnSender;
   private final ExternalServiceCredentialGenerator backupServiceCredentialGenerator;
 
-  private final TwilioVerifyExperimentEnrollmentManager verifyExperimentEnrollmentManager;
-
   public AccountController(StoredVerificationCodeManager pendingAccounts,
                            AccountsManager accounts,
                            UsernamesManager usernames,
                            AbusiveHostRules abusiveHostRules,
                            RateLimiters rateLimiters,
-                           SmsSender smsSenderFactory,
                            DynamicConfigurationManager<DynamicConfiguration> dynamicConfigurationManager,
                            TurnTokenGenerator turnTokenGenerator,
                            Map<String, Integer> testDevices,
                            RecaptchaClient recaptchaClient,
                            GCMSender gcmSender,
                            APNSender apnSender,
-                           ExternalServiceCredentialGenerator backupServiceCredentialGenerator,
-                           TwilioVerifyExperimentEnrollmentManager verifyExperimentEnrollmentManager)
+                           ExternalServiceCredentialGenerator backupServiceCredentialGenerator)
   {
     this.pendingAccounts                   = pendingAccounts;
     this.accounts                          = accounts;
     this.usernames                         = usernames;
     this.abusiveHostRules                  = abusiveHostRules;
     this.rateLimiters                      = rateLimiters;
-    this.smsSender                         = smsSenderFactory;
     this.dynamicConfigurationManager       = dynamicConfigurationManager;
     this.testDevices                       = testDevices;
     this.turnTokenGenerator                = turnTokenGenerator;
@@ -156,7 +139,6 @@ public class AccountController {
     this.gcmSender                         = gcmSender;
     this.apnSender                         = apnSender;
     this.backupServiceCredentialGenerator  = backupServiceCredentialGenerator;
-    this.verifyExperimentEnrollmentManager = verifyExperimentEnrollmentManager;
   }
 
   @Timed
@@ -167,19 +149,18 @@ public class AccountController {
                              @PathParam("token")  String pushToken,
                              @PathParam("number") String number,
                              @QueryParam("voip")  Optional<Boolean> useVoip)
-      throws ImpossiblePhoneNumberException, NonNormalizedPhoneNumberException {
+      throws ImpossibleNikNumberException {
 
     if (!"apn".equals(pushType) && !"fcm".equals(pushType)) {
       return Response.status(400).build();
     }
 
-    Util.requireNormalizedNumber(number);
+    Util.requireNikNumber(number);
 
     String                 pushChallenge          = generatePushChallenge();
     StoredVerificationCode storedVerificationCode = new StoredVerificationCode(null,
                                                                                System.currentTimeMillis(),
-                                                                               pushChallenge,
-                                                                               null);
+                                                                               pushChallenge);
 
     pendingAccounts.store(number, storedVerificationCode);
 
@@ -206,9 +187,9 @@ public class AccountController {
                                 @QueryParam("client")           Optional<String> client,
                                 @QueryParam("captcha")          Optional<String> captcha,
                                 @QueryParam("challenge")        Optional<String> pushChallenge)
-      throws RateLimitExceededException, RetryLaterException, ImpossiblePhoneNumberException, NonNormalizedPhoneNumberException {
+      throws RateLimitExceededException, RetryLaterException, ImpossibleNikNumberException {
 
-    Util.requireNormalizedNumber(number);
+    Util.requireNikNumber(number);
 
     String sourceHost = ForwardedIpUtil.getMostRecentProxy(forwardedFor).orElseThrow();
 
@@ -249,8 +230,7 @@ public class AccountController {
     VerificationCode       verificationCode       = generateVerificationCode(number);
     StoredVerificationCode storedVerificationCode = new StoredVerificationCode(verificationCode.getVerificationCode(),
         System.currentTimeMillis(),
-        storedChallenge.map(StoredVerificationCode::getPushCode).orElse(null),
-        storedChallenge.flatMap(StoredVerificationCode::getTwilioVerificationSid).orElse(null));
+        storedChallenge.map(StoredVerificationCode::getPushCode).orElse(null));
 
     pendingAccounts.store(number, storedVerificationCode);
 
@@ -339,23 +319,11 @@ public class AccountController {
 
     rateLimiters.getVerifyLimiter().validate(number);
 
-    // Note that successful verification depends on being able to find a stored verification code for the given number.
-    // We check that numbers are normalized before we store verification codes, and so don't need to re-assert
-    // normalization here.
-    Optional<StoredVerificationCode> storedVerificationCode = pendingAccounts.getCodeForNumber(number);
+    Optional<Account> existingAccount = accounts.get(number);
 
-    if (storedVerificationCode.isEmpty() || !storedVerificationCode.get().isValid(verificationCode)) {
-//      throw new WebApplicationException(Response.status(403).build());
+    if (existingAccount.isPresent()) {
+      verifyRegistrationLock(existingAccount.get(), accountAttributes.getRegistrationLock());
     }
-
-    storedVerificationCode.flatMap(StoredVerificationCode::getTwilioVerificationSid)
-        .ifPresent(smsSender::reportVerificationSucceeded);
-
-      Optional<Account> existingAccount = accounts.get(number);
-
-      if (existingAccount.isPresent()) {
-        verifyRegistrationLock(existingAccount.get(), accountAttributes.getRegistrationLock());
-      }
 
     if (availableForTransfer.orElse(false) && existingAccount.map(Account::isTransferSupported).orElse(false)) {
       throw new WebApplicationException(Response.status(409).build());
@@ -370,12 +338,8 @@ public class AccountController {
 
       final List<Tag> tags = new ArrayList<>();
       tags.add(UserAgentTagUtil.getPlatformTag(userAgent));
-      tags.add(Tag.of(VERIFY_EXPERIMENT_TAG_NAME, String.valueOf(storedVerificationCode.get().getTwilioVerificationSid().isPresent())));
 
       Metrics.counter(ACCOUNT_VERIFY_COUNTER_NAME, tags).increment();
-
-      Metrics.timer(name(AccountController.class, "verifyDuration"), tags)
-          .record(Instant.now().toEpochMilli() - storedVerificationCode.get().getTimestamp(), TimeUnit.MILLISECONDS);
     }
 
     return new AccountCreationResult(account.getUuid(), account.getNumber(), existingAccount.map(Account::isStorageSupported).orElse(false));
@@ -386,7 +350,7 @@ public class AccountController {
   @Path("/number")
   @Produces(MediaType.APPLICATION_JSON)
   public void changeNumber(@Auth final AuthenticatedAccount authenticatedAccount, @Valid final ChangePhoneNumberRequest request)
-      throws RateLimitExceededException, InterruptedException, ImpossiblePhoneNumberException, NonNormalizedPhoneNumberException {
+      throws RateLimitExceededException, InterruptedException, ImpossibleNikNumberException {
 
     if (request.getNumber().equals(authenticatedAccount.getAccount().getNumber())) {
       // This may be a request that got repeated due to poor network conditions or other client error; take no action,
@@ -394,19 +358,12 @@ public class AccountController {
       return;
     }
 
-    Util.requireNormalizedNumber(request.getNumber());
+    Util.requireNikNumber(request.getNumber());
 
     rateLimiters.getVerifyLimiter().validate(request.getNumber());
 
     final Optional<StoredVerificationCode> storedVerificationCode =
         pendingAccounts.getCodeForNumber(request.getNumber());
-
-    if (storedVerificationCode.isEmpty() || !storedVerificationCode.get().isValid(request.getCode())) {
-      throw new WebApplicationException(Response.status(403).build());
-    }
-
-    storedVerificationCode.flatMap(StoredVerificationCode::getTwilioVerificationSid)
-        .ifPresent(smsSender::reportVerificationSucceeded);
 
     final Optional<Account> existingAccount = accounts.get(request.getNumber());
 
