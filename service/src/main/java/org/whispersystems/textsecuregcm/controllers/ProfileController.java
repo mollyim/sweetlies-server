@@ -119,15 +119,6 @@ public class ProfileController {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response setProfile(@Auth AuthenticatedAccount auth, @Valid CreateProfileRequest request) {
-    final Set<String> allowedPaymentsCountryCodes =
-        dynamicConfigurationManager.getConfiguration().getPaymentsConfiguration().getAllowedCountryCodes();
-
-    if (StringUtils.isNotBlank(request.getPaymentAddress()) &&
-        !allowedPaymentsCountryCodes.contains(Util.getCountryCode(auth.getAccount().getNumber()))) {
-
-      return Response.status(Status.FORBIDDEN).build();
-    }
-
     Optional<VersionedProfile> currentProfile = profilesManager.get(auth.getAccount().getUuid(), request.getVersion());
     String avatar = request.isAvatar() ? generateAvatarObjectName() : null;
     Optional<ProfileAvatarUploadAttributes> response = Optional.empty();

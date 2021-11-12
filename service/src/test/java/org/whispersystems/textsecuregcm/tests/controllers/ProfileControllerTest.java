@@ -10,7 +10,6 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -25,12 +24,10 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.Set;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.api.Condition;
 import org.glassfish.jersey.test.grizzly.GrizzlyWebTestContainerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +60,6 @@ import org.whispersystems.textsecuregcm.storage.VersionedProfile;
 import org.whispersystems.textsecuregcm.tests.util.AccountsHelper;
 import org.whispersystems.textsecuregcm.tests.util.AuthHelper;
 import org.whispersystems.textsecuregcm.util.SystemMapper;
-import org.whispersystems.textsecuregcm.util.Util;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
@@ -490,9 +486,6 @@ class ProfileControllerTest {
 
   @Test
   void testSetProfilePaymentAddress() throws InvalidInputException {
-    when(dynamicPaymentsConfiguration.getAllowedCountryCodes())
-        .thenReturn(Set.of(Util.getCountryCode(AuthHelper.VALID_NUMBER_TWO)));
-
     ProfileKeyCommitment commitment = new ProfileKey(new byte[32]).getCommitment(AuthHelper.VALID_UUID);
 
     clearInvocations(AuthHelper.VALID_ACCOUNT_TWO);
@@ -530,27 +523,6 @@ class ProfileControllerTest {
   }
 
   @Test
-  void testSetProfilePaymentAddressCountryNotAllowed() throws InvalidInputException {
-    ProfileKeyCommitment commitment = new ProfileKey(new byte[32]).getCommitment(AuthHelper.VALID_UUID);
-
-    clearInvocations(AuthHelper.VALID_ACCOUNT_TWO);
-
-    final String name = RandomStringUtils.randomAlphabetic(380);
-    final String paymentAddress = RandomStringUtils.randomAlphanumeric(776);
-
-    Response response = resources.getJerseyTest()
-        .target("/v1/profile")
-        .request()
-        .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID_TWO, AuthHelper.VALID_PASSWORD_TWO))
-        .put(Entity.entity(new CreateProfileRequest(commitment, "yetanotherversion", name, null, null, paymentAddress, false), MediaType.APPLICATION_JSON_TYPE));
-
-    assertThat(response.getStatus()).isEqualTo(403);
-    assertThat(response.hasEntity()).isFalse();
-
-    verify(profilesManager, never()).set(any(), any());
-  }
-
-  @Test
   void testGetProfileByVersion() throws RateLimitExceededException {
     Profile profile = resources.getJerseyTest()
                                .target("/v1/profile/" + AuthHelper.VALID_UUID_TWO + "/validversion")
@@ -577,9 +549,6 @@ class ProfileControllerTest {
 
   @Test
   void testSetProfileUpdatesAccountCurrentVersion() throws InvalidInputException {
-    when(dynamicPaymentsConfiguration.getAllowedCountryCodes())
-        .thenReturn(Set.of(Util.getCountryCode(AuthHelper.VALID_NUMBER_TWO)));
-
     ProfileKeyCommitment commitment = new ProfileKey(new byte[32]).getCommitment(AuthHelper.VALID_UUID_TWO);
 
     clearInvocations(AuthHelper.VALID_ACCOUNT_TWO);
