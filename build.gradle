@@ -1,5 +1,5 @@
 plugins {
-    id 'com.google.protobuf' version '0.8.17' apply false
+    id 'com.google.protobuf' version '0.8.19' apply false
     id 'com.google.cloud.tools.jib' version '3.1.4' apply false
     id 'org.ysb33r.terraform' version '0.12.2'
     id "com.avast.gradle.docker-compose" version "0.14.9"
@@ -42,7 +42,7 @@ subprojects {
         boringSslVersion = '2.0.41.Final'
         opentest4jVersion = '1.2.0'
         postgresqlVersion = '42.2.24'
-        protobufVersion = '3.17.1'
+        protobufVersion = '3.21.7'
         pushyVersion = '0.15.0'
         resilience4jVersion = '1.5.0'
         slf4jVersion = '1.7.30'
