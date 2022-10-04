@@ -125,7 +125,7 @@ public class Accounts extends AbstractDynamoDbStore {
             throw new ContestedOptimisticLockException();
           }
 
-          // this shouldn’t happen
+          // this shouldn't happen
           throw new RuntimeException("could not create account: " + extractCancellationReasonCodes(e));
         }
       } catch (JsonProcessingException e) {
@@ -284,7 +284,7 @@ public class Accounts extends AbstractDynamoDbStore {
 
       } catch (final ConditionalCheckFailedException e) {
 
-        // the exception doesn’t give details about which condition failed,
+        // the exception doesn't give details about which condition failed,
         // but we can infer it was an optimistic locking failure if the UUID is known
         throw get(account.getUuid()).isPresent() ? new ContestedOptimisticLockException() : e;
       }

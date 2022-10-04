@@ -407,7 +407,7 @@ class AuthEnablementRefreshRequirementProviderTest {
     @GET
     @Path("/authorized")
     public String testAuth(@Auth TestPrincipal principal) {
-      return "You’re in!";
+      return "You're in!";
     }
 
     @PUT

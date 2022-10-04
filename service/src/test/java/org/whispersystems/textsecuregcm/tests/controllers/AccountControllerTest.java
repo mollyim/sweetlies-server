@@ -1577,7 +1577,7 @@ class AccountControllerTest {
   void testSetInvalidUsername() {
     Response response =
         resources.getJerseyTest()
-                 .target("/v1/accounts/username/pаypal")
+                 .target("/v1/accounts/username/p\u0430ypal")
                  .request()
                  .header("Authorization", AuthHelper.getAuthHeader(AuthHelper.VALID_UUID, AuthHelper.VALID_PASSWORD))
                  .put(Entity.text(""));

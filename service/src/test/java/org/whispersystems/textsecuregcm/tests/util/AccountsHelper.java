@@ -87,7 +87,7 @@ public class AccountsHelper {
 
       updatedAccount = mock(Account.class);
 
-      // it’s not possible to make `account` behave as if it were stale, because we use static mocks in AuthHelper
+      // it's not possible to make `account` behave as if it were stale, because we use static mocks in AuthHelper
 
       for (Stubbing stubbing : mockingDetails.getStubbings()) {
         switch (stubbing.getInvocation().getMethod().getName()) {

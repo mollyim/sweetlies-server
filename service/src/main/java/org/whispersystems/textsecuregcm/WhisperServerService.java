@@ -560,7 +560,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     webSocketEnvironment.jersey().register(new MetricsApplicationEventListener(TrafficSource.WEBSOCKET));
     webSocketEnvironment.jersey().register(new KeepAliveController(clientPresenceManager));
 
-    // these should be common, but use @Auth DisabledPermittedAccount, which isn’t supported yet on websocket
+    // these should be common, but use @Auth DisabledPermittedAccount, which isn't supported yet on websocket
     environment.jersey().register(
         new AccountController(pendingAccountsManager, accountsManager, usernamesManager, abusiveHostRules, rateLimiters,
             smsSender, dynamicConfigurationManager, turnTokenGenerator, config.getTestDevices(),

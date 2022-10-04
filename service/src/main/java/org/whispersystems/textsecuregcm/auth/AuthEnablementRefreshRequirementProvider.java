@@ -56,7 +56,7 @@ public class AuthEnablementRefreshRequirementProvider implements WebsocketRefres
     if (requestEvent.getUriInfo().getMatchedResourceMethod().getInvocable().getHandlingMethod().getAnnotation(ChangesDeviceEnabledState.class) != null) {
       // The authenticated principal, if any, will be available after filters have run.
       // Now that the account is known, capture a snapshot of `isEnabled` for the account's devices before carrying out
-      // the request’s business logic.
+      // the request's business logic.
       ContainerRequestUtil.getAuthenticatedAccount(requestEvent.getContainerRequest()).ifPresent(account ->
           setAccount(requestEvent.getContainerRequest(), account));
     }
