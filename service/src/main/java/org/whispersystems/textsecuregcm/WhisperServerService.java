@@ -256,7 +256,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
 
   @Override
   public String getName() {
-    return "whisper-server";
+    return "whisper-service";
   }
 
   @Override
