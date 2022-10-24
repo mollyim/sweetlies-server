@@ -40,16 +40,15 @@ services:
       - "dev-redis-data:/redis-data"
 
   localstack:
-    image: localstack/localstack:0.12.19.1
+    image: localstack/localstack:1.2.0
     healthcheck:
       test: [ CMD-SHELL, "awslocal dynamodb list-tables && awslocal s3 ls" ]
     ports:
       - "4566:4566"
     environment:
-      - "SERVICES=dynamodb,s3,sts"
-      - "DATA_DIR=/tmp/localstack/data"
+      - "DISABLE_EVENTS=1"
     volumes:
-      - "dev-localstack-data:/tmp/localstack"
+      - "dev-localstack-data:/var/lib/localstack"
 
   envoy:
     image: envoyproxy/envoy-alpine:v1.20.0
